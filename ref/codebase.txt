@@ -1,0 +1,428 @@
+.
+├── build_opt.h
+├── cobalt-x_zero.ino
+├── config.cpp
+├── config.h
+├── drivers
+├── led.cpp
+├── led.h
+├── pipeline.cpp
+├── pipeline.h
+├── ref
+│   ├── Cobalt-X Zero: Firmware Datasheet.md
+│   ├── codebase.txt
+│   └── Schematic.png
+├── spi.cpp
+├── spi.h
+├── system.cpp
+├── system.h
+├── timer.cpp
+├── timer.h
+├── usb.cpp
+├── usbd_conf_custom.h
+├── usb.h
+├── usb_hid.cpp
+├── usb_hid.h
+├── vdrive.cpp
+└── vdrive.h
+
+3 directories, 24 files
+
+
+================================================================
+FILE: ./led.cpp
+================================================================
+
+
+
+================================================================
+FILE: ./timer.cpp
+================================================================
+
+
+#include "timer.h"
+#include "pipeline.h"
+#include <HardwareTimer.h>
+
+static HardwareTimer *htim = nullptr;
+
+static void timer_callback(void) {
+  pipeline_tick();
+}
+
+void timer_init(void) {
+  htim = new HardwareTimer(TIM3);
+  htim->setOverflow(32000, HERTZ_FORMAT);
+  htim->attachInterrupt(timer_callback);
+  htim->setInterruptPriority(0, 0);
+  htim->resume();
+}
+
+
+================================================================
+FILE: ./system.cpp
+================================================================
+
+
+#include "system.h"
+#include <stm32g4xx_hal.h>
+
+void SystemClock_Config(void) {
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+
+  RCC_OscInitTypeDef osc = { 0 };
+  osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
+  osc.HSIState = RCC_HSI_ON;
+  osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  osc.HSI48State = RCC_HSI48_ON;
+  osc.PLL.PLLState = RCC_PLL_ON;
+  osc.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  osc.PLL.PLLM = RCC_PLLM_DIV4;
+  osc.PLL.PLLN = 85;
+  osc.PLL.PLLP = RCC_PLLP_DIV2;
+  osc.PLL.PLLQ = RCC_PLLQ_DIV2;
+  osc.PLL.PLLR = RCC_PLLR_DIV2;
+  HAL_RCC_OscConfig(&osc);
+
+  RCC_ClkInitTypeDef clk = { 0 };
+  clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  clk.APB1CLKDivider = RCC_HCLK_DIV1;
+  clk.APB2CLKDivider = RCC_HCLK_DIV1;
+  HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
+
+  RCC_PeriphCLKInitTypeDef periph = { 0 };
+  periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+  HAL_RCCEx_PeriphCLKConfig(&periph);
+}
+
+
+================================================================
+FILE: ./vdrive.h
+================================================================
+
+
+
+================================================================
+FILE: ./led.h
+================================================================
+
+
+
+================================================================
+FILE: ./usb.cpp
+================================================================
+
+
+#include "usb.h"
+
+void usb_init(void) {
+}
+
+void usb_task(void) {
+}
+
+
+================================================================
+FILE: ./system.h
+================================================================
+
+
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void SystemClock_Config(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+
+================================================================
+FILE: ./usb.h
+================================================================
+
+
+#ifndef USB_H
+#define USB_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void usb_init(void);
+  void usb_task(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+
+================================================================
+FILE: ./config.cpp
+================================================================
+
+
+
+================================================================
+FILE: ./vdrive.cpp
+================================================================
+
+
+#include "vdrive.h"
+#include <stm32g4xx.h>
+
+void vdrive_init() {
+  if (GPIOA->IDR & (1 << 6)) {
+    // MSC
+  }
+}
+
+
+================================================================
+FILE: ./build_opt.h
+================================================================
+
+
+-DUSBCON
+-DUSBD_USE_HID_COMPOSITE
+-DHAL_PCD_MODULE_ENABLED
+-include usbd_conf_custom.h
+
+
+================================================================
+FILE: ./spi.h
+================================================================
+
+
+
+================================================================
+FILE: ./pipeline.cpp
+================================================================
+
+
+#include "pipeline.h"
+#include <stm32g4xx.h>
+
+#define DEBOUNCE_TICKS 96u
+#define QUEUE_MASK 7u
+
+static volatile uint8_t btn_state = 0;
+static volatile uint16_t lock_lmb = 0;
+static volatile uint16_t lock_rmb = 0;
+static volatile uint16_t lock_mmb = 0;
+
+static volatile uint8_t q_buf[QUEUE_MASK + 1u];
+static volatile uint8_t q_head = 0;
+static volatile uint8_t q_tail = 0;
+
+static inline void q_push(uint8_t state) {
+  uint8_t next = (q_head + 1u) & QUEUE_MASK;
+  if (next != q_tail) {
+    q_buf[q_head] = state;
+    q_head = next;
+  }
+}
+
+static inline void debounce(volatile uint16_t *lk, uint8_t idx, uint8_t pin) {
+  if (*lk) {
+    (*lk)--;
+    return;
+  }
+  uint8_t pressed = !((GPIOB->IDR >> pin) & 1u);
+  uint8_t was = (btn_state >> idx) & 1u;
+  if (pressed == was) return;
+  if (pressed) btn_state |= (1u << idx);
+  else btn_state &= ~(1u << idx);
+  *lk = DEBOUNCE_TICKS;
+  q_push(btn_state);
+}
+
+void pipeline_init(void) {
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CYCCNT = 0;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+  (void)RCC->AHB2ENR;
+  GPIOB->MODER &= ~(0x3Fu << 6u);
+  GPIOB->PUPDR = (GPIOB->PUPDR & ~(0x3Fu << 6u)) | (0x15u << 6u);
+}
+
+void pipeline_tick(void) {
+  debounce(&lock_lmb, 0, 3);
+  debounce(&lock_rmb, 1, 4);
+  debounce(&lock_mmb, 2, 5);
+}
+
+uint8_t pipeline_dequeue(uint8_t *out) {
+  if (q_head == q_tail) return 0;
+  *out = q_buf[q_tail];
+  q_tail = (q_tail + 1u) & QUEUE_MASK;
+  return 1;
+}
+
+
+================================================================
+FILE: ./usbd_conf_custom.h
+================================================================
+
+
+#pragma once
+
+#undef USB_VID
+#define USB_VID 0x1209
+
+#undef USB_PID
+#define USB_PID 0xC0BA
+
+#undef USB_MANUFACTURER_STRING
+#define USB_MANUFACTURER_STRING "Synarix"
+
+#undef USB_PRODUCT_STRING
+#define USB_PRODUCT_STRING "Cobalt-X Zero"
+
+#undef HID_FS_BINTERVAL
+#define HID_FS_BINTERVAL 0x01
+
+
+================================================================
+FILE: ./config.h
+================================================================
+
+
+
+================================================================
+FILE: ./usb_hid.cpp
+================================================================
+
+
+#include "usb_hid.h"
+#include <Mouse.h>
+
+extern "C" const uint8_t hid_report_descriptor[HID_REPORT_DESC_SIZE] = {
+  0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x09, 0x01,
+  0xA1, 0x00, 0x05, 0x09, 0x19, 0x01, 0x29, 0x05,
+  0x15, 0x00, 0x25, 0x01, 0x95, 0x05, 0x75, 0x01,
+  0x81, 0x02, 0x95, 0x01, 0x75, 0x03, 0x81, 0x03,
+  0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x09, 0x38,
+  0x15, 0x81, 0x25, 0x7F, 0x75, 0x08, 0x95, 0x03,
+  0x81, 0x06, 0xC0, 0xC0
+};
+
+void usb_hid_init(void) {
+  Mouse.begin();
+}
+
+void usb_hid_send_buttons(uint8_t buttons) {
+  static uint8_t prev = 0xFF;
+
+  uint8_t changed = buttons ^ prev;
+  if (!changed) return;
+  prev = buttons;
+
+  uint8_t falling = changed & ~buttons;
+  uint8_t rising = changed & buttons;
+
+  uint8_t rel_mask = 0;
+  uint8_t prs_mask = 0;
+
+  if (falling & 0x01) rel_mask |= MOUSE_LEFT;
+  if (falling & 0x02) rel_mask |= MOUSE_RIGHT;
+  if (falling & 0x04) rel_mask |= MOUSE_MIDDLE;
+  if (rising & 0x01) prs_mask |= MOUSE_LEFT;
+  if (rising & 0x02) prs_mask |= MOUSE_RIGHT;
+  if (rising & 0x04) prs_mask |= MOUSE_MIDDLE;
+
+  if (rel_mask) Mouse.release(rel_mask);
+  if (prs_mask) Mouse.press(prs_mask);
+}
+
+
+================================================================
+FILE: ./timer.h
+================================================================
+
+
+#ifndef TIMER_H
+#define TIMER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void timer_init(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+
+================================================================
+FILE: ./spi.cpp
+================================================================
+
+
+
+================================================================
+FILE: ./usb_hid.h
+================================================================
+
+
+#ifndef USB_HID_H
+#define USB_HID_H
+
+#include <stdint.h>
+
+#define HID_REPORT_DESC_SIZE 52
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  extern const uint8_t hid_report_descriptor[HID_REPORT_DESC_SIZE];
+  void usb_hid_init(void);
+  void usb_hid_send_buttons(uint8_t buttons);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+
+================================================================
+FILE: ./pipeline.h
+================================================================
+
+
+#ifndef PIPELINE_H
+#define PIPELINE_H
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void pipeline_init(void);
+  void pipeline_tick(void);
+  uint8_t pipeline_dequeue(uint8_t *out);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

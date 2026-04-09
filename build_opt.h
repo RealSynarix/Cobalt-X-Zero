@@ -1,0 +1,5 @@
+
+-DUSBCON
+-DUSBD_USE_HID_COMPOSITE
+-DHAL_PCD_MODULE_ENABLED
+-include usbd_conf_custom.h
