@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
   void usb_hid_init(void);
-  void usb_hid_send_report(uint8_t buttons);
+  void usb_hid_send_report(uint8_t buttons, int8_t wheel);
 
 #ifdef __cplusplus
 }

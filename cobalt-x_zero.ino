@@ -1,22 +1,21 @@
 #include "system.h"
+#include "usb.h"
 #include "timer.h"
 #include "pipeline.h"
-#include "usb.h"
 #include "usb_hid.h"
 
-void setup() {
-  SystemClock_Config();
+void setup(void) {
   pipeline_init();
-  timer_init();
-  usb_init();
   usb_hid_init();
+  usb_init();
+  timer_init();
 }
 
-void loop() {
+void loop(void) {
   usb_sync_tick();
 
-  uint8_t next_btn_state;
-  if (pipeline_dequeue(&next_btn_state)) {
-    usb_hid_send_report(next_btn_state);
+  pipeline_report_t report;
+  if (pipeline_dequeue(&report)) {
+    usb_hid_send_report(report.buttons, report.wheel);
   }
 }

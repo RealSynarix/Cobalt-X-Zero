@@ -3,13 +3,18 @@
 
 #include <stdint.h>
 
+typedef struct {
+  uint8_t buttons;
+  int8_t wheel;
+} pipeline_report_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
   void pipeline_init(void);
   void pipeline_tick(void);
-  uint8_t pipeline_dequeue(uint8_t *out);
+  uint8_t pipeline_dequeue(pipeline_report_t *out);
 
 #ifdef __cplusplus
 }

@@ -11,6 +11,7 @@
 ├── ref
 │   ├── Cobalt-X Zero: Firmware Datasheet.md
 │   ├── codebase.txt
+│   ├── cur_codebase.txt
 │   └── Schematic.png
 ├── spi.cpp
 ├── spi.h
@@ -26,7 +27,7 @@
 ├── vdrive.cpp
 └── vdrive.h
 
-3 directories, 24 files
+3 directories, 25 files
 
 
 ================================================================
@@ -38,7 +39,6 @@ FILE: ./led.cpp
 ================================================================
 FILE: ./timer.cpp
 ================================================================
-
 
 #include "timer.h"
 #include "pipeline.h"
@@ -58,11 +58,15 @@ void timer_init(void) {
   htim->resume();
 }
 
+void timer_resync(void) {
+  if (htim) {
+    TIM3->CNT = 0;
+  }
+}
 
 ================================================================
 FILE: ./system.cpp
 ================================================================
-
 
 #include "system.h"
 #include <stm32g4xx_hal.h>
@@ -96,8 +100,16 @@ void SystemClock_Config(void) {
   periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
   periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
   HAL_RCCEx_PeriphCLKConfig(&periph);
-}
 
+  __HAL_RCC_CRS_CLK_ENABLE();
+  RCC_CRSInitTypeDef crs = { 0 };
+  crs.Prescaler = RCC_CRS_SYNC_DIV1;
+  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
+  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
+  crs.ErrorLimitValue = 34;
+  crs.HSI48CalibrationValue = 32;
+  HAL_RCCEx_CRSConfig(&crs);
+}
 
 ================================================================
 FILE: ./vdrive.h
@@ -115,20 +127,25 @@ FILE: ./led.h
 FILE: ./usb.cpp
 ================================================================
 
-
 #include "usb.h"
+#include "timer.h"
+#include <stm32g4xx_hal.h>
 
 void usb_init(void) {
+  USB->CNTR |= USB_CNTR_SOFM;
+  USB->ISTR &= ~USB_ISTR_SOF;
 }
 
-void usb_task(void) {
+void usb_sync_tick(void) {
+  if (USB->ISTR & USB_ISTR_SOF) {
+    USB->ISTR &= ~USB_ISTR_SOF;
+    timer_resync();
+  }
 }
-
 
 ================================================================
 FILE: ./system.h
 ================================================================
-
 
 #ifndef SYSTEM_H
 #define SYSTEM_H
@@ -145,11 +162,9 @@ extern "C" {
 
 #endif
 
-
 ================================================================
 FILE: ./usb.h
 ================================================================
-
 
 #ifndef USB_H
 #define USB_H
@@ -159,14 +174,13 @@ extern "C" {
 #endif
 
   void usb_init(void);
-  void usb_task(void);
+  void usb_sync_tick(void);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
 
 ================================================================
 FILE: ./config.cpp
@@ -210,68 +224,71 @@ FILE: ./spi.h
 FILE: ./pipeline.cpp
 ================================================================
 
-
 #include "pipeline.h"
 #include <stm32g4xx.h>
 
-#define DEBOUNCE_TICKS 96u
-#define QUEUE_MASK 7u
+#define DEBOUNCE_LOCKOUT 160u
+#define QUEUE_SIZE 8u
+#define QUEUE_MASK (QUEUE_SIZE - 1u)
 
-static volatile uint8_t btn_state = 0;
-static volatile uint16_t lock_lmb = 0;
-static volatile uint16_t lock_rmb = 0;
-static volatile uint16_t lock_mmb = 0;
+static volatile uint8_t current_btn_state = 0;
+static volatile uint16_t lmb_lock = 0;
+static volatile uint16_t rmb_lock = 0;
+static volatile uint16_t mmb_lock = 0;
+static volatile uint16_t mac_lock = 0;
 
-static volatile uint8_t q_buf[QUEUE_MASK + 1u];
+static volatile uint8_t report_queue[QUEUE_SIZE];
 static volatile uint8_t q_head = 0;
 static volatile uint8_t q_tail = 0;
 
 static inline void q_push(uint8_t state) {
   uint8_t next = (q_head + 1u) & QUEUE_MASK;
   if (next != q_tail) {
-    q_buf[q_head] = state;
+    report_queue[q_head] = state;
     q_head = next;
   }
 }
 
-static inline void debounce(volatile uint16_t *lk, uint8_t idx, uint8_t pin) {
-  if (*lk) {
-    (*lk)--;
+static inline void debounce_logic(volatile uint16_t *lock, uint8_t bit_idx, uint8_t pin) {
+  if (*lock > 0) {
+    (*lock)--;
     return;
   }
-  uint8_t pressed = !((GPIOB->IDR >> pin) & 1u);
-  uint8_t was = (btn_state >> idx) & 1u;
-  if (pressed == was) return;
-  if (pressed) btn_state |= (1u << idx);
-  else btn_state &= ~(1u << idx);
-  *lk = DEBOUNCE_TICKS;
-  q_push(btn_state);
+
+  uint8_t physical_pressed = !((GPIOB->IDR >> pin) & 1u);
+  uint8_t logical_pressed = (current_btn_state >> bit_idx) & 1u;
+
+  if (physical_pressed != logical_pressed) {
+    if (physical_pressed) {
+      current_btn_state |= (1u << bit_idx);
+    } else {
+      current_btn_state &= ~(1u << bit_idx);
+    }
+    *lock = DEBOUNCE_LOCKOUT;
+    q_push(current_btn_state);
+  }
 }
 
 void pipeline_init(void) {
-  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-  DWT->CYCCNT = 0;
-  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
   (void)RCC->AHB2ENR;
-  GPIOB->MODER &= ~(0x3Fu << 6u);
-  GPIOB->PUPDR = (GPIOB->PUPDR & ~(0x3Fu << 6u)) | (0x15u << 6u);
+  GPIOB->MODER &= ~(0xFFu << 6u);
+  GPIOB->PUPDR = (GPIOB->PUPDR & ~(0xFFu << 6u)) | (0x55u << 6u);
 }
 
 void pipeline_tick(void) {
-  debounce(&lock_lmb, 0, 3);
-  debounce(&lock_rmb, 1, 4);
-  debounce(&lock_mmb, 2, 5);
+  debounce_logic(&lmb_lock, 0, 3);
+  debounce_logic(&rmb_lock, 1, 4);
+  debounce_logic(&mmb_lock, 2, 5);
+  debounce_logic(&mac_lock, 3, 6);
 }
 
 uint8_t pipeline_dequeue(uint8_t *out) {
   if (q_head == q_tail) return 0;
-  *out = q_buf[q_tail];
+  *out = report_queue[q_tail];
   q_tail = (q_tail + 1u) & QUEUE_MASK;
   return 1;
 }
-
 
 ================================================================
 FILE: ./usbd_conf_custom.h
@@ -306,53 +323,39 @@ FILE: ./config.h
 FILE: ./usb_hid.cpp
 ================================================================
 
-
 #include "usb_hid.h"
+#include <Arduino.h>
 #include <Mouse.h>
-
-extern "C" const uint8_t hid_report_descriptor[HID_REPORT_DESC_SIZE] = {
-  0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x09, 0x01,
-  0xA1, 0x00, 0x05, 0x09, 0x19, 0x01, 0x29, 0x05,
-  0x15, 0x00, 0x25, 0x01, 0x95, 0x05, 0x75, 0x01,
-  0x81, 0x02, 0x95, 0x01, 0x75, 0x03, 0x81, 0x03,
-  0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x09, 0x38,
-  0x15, 0x81, 0x25, 0x7F, 0x75, 0x08, 0x95, 0x03,
-  0x81, 0x06, 0xC0, 0xC0
-};
 
 void usb_hid_init(void) {
   Mouse.begin();
 }
 
-void usb_hid_send_buttons(uint8_t buttons) {
-  static uint8_t prev = 0xFF;
+void usb_hid_send_report(uint8_t buttons) {
+  if (buttons & 0x01) {
+    if (!Mouse.isPressed(MOUSE_LEFT)) {
+      Mouse.press(MOUSE_LEFT);
+    }
+  } else {
+    if (Mouse.isPressed(MOUSE_LEFT)) {
+      Mouse.release(MOUSE_LEFT);
+    }
+  }
 
-  uint8_t changed = buttons ^ prev;
-  if (!changed) return;
-  prev = buttons;
-
-  uint8_t falling = changed & ~buttons;
-  uint8_t rising = changed & buttons;
-
-  uint8_t rel_mask = 0;
-  uint8_t prs_mask = 0;
-
-  if (falling & 0x01) rel_mask |= MOUSE_LEFT;
-  if (falling & 0x02) rel_mask |= MOUSE_RIGHT;
-  if (falling & 0x04) rel_mask |= MOUSE_MIDDLE;
-  if (rising & 0x01) prs_mask |= MOUSE_LEFT;
-  if (rising & 0x02) prs_mask |= MOUSE_RIGHT;
-  if (rising & 0x04) prs_mask |= MOUSE_MIDDLE;
-
-  if (rel_mask) Mouse.release(rel_mask);
-  if (prs_mask) Mouse.press(prs_mask);
+  if (buttons & 0x02) {
+    if (!Mouse.isPressed(MOUSE_RIGHT)) {
+      Mouse.press(MOUSE_RIGHT);
+    }
+  } else {
+    if (Mouse.isPressed(MOUSE_RIGHT)) {
+      Mouse.release(MOUSE_RIGHT);
+    }
+  }
 }
-
 
 ================================================================
 FILE: ./timer.h
 ================================================================
-
 
 #ifndef TIMER_H
 #define TIMER_H
@@ -362,13 +365,13 @@ extern "C" {
 #endif
 
   void timer_init(void);
+  void timer_resync(void);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
 
 ================================================================
 FILE: ./spi.cpp
@@ -380,21 +383,17 @@ FILE: ./spi.cpp
 FILE: ./usb_hid.h
 ================================================================
 
-
 #ifndef USB_HID_H
 #define USB_HID_H
 
 #include <stdint.h>
 
-#define HID_REPORT_DESC_SIZE 52
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  extern const uint8_t hid_report_descriptor[HID_REPORT_DESC_SIZE];
   void usb_hid_init(void);
-  void usb_hid_send_buttons(uint8_t buttons);
+  void usb_hid_send_report(uint8_t buttons);
 
 #ifdef __cplusplus
 }
@@ -402,11 +401,9 @@ extern "C" {
 
 #endif
 
-
 ================================================================
 FILE: ./pipeline.h
 ================================================================
-
 
 #ifndef PIPELINE_H
 #define PIPELINE_H
