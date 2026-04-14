@@ -2,28 +2,20 @@
 #include <Arduino.h>
 #include <Mouse.h>
 
+static uint8_t last_sent = 0;
+
 void usb_hid_init(void) {
   Mouse.begin();
 }
 
 void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
-  if (buttons & 0x01) {
-    if (!Mouse.isPressed(MOUSE_LEFT)) Mouse.press(MOUSE_LEFT);
-  } else {
-    if (Mouse.isPressed(MOUSE_LEFT)) Mouse.release(MOUSE_LEFT);
+  if (buttons != last_sent) {
+    if ((buttons & 0x01) != (last_sent & 0x01)) (buttons & 0x01) ? Mouse.press(MOUSE_LEFT) : Mouse.release(MOUSE_LEFT);
+    if ((buttons & 0x02) != (last_sent & 0x02)) (buttons & 0x02) ? Mouse.press(MOUSE_RIGHT) : Mouse.release(MOUSE_RIGHT);
+    if ((buttons & 0x04) != (last_sent & 0x04)) (buttons & 0x04) ? Mouse.press(MOUSE_MIDDLE) : Mouse.release(MOUSE_MIDDLE);
+    last_sent = buttons;
   }
-
-  if (buttons & 0x02) {
-    if (!Mouse.isPressed(MOUSE_RIGHT)) Mouse.press(MOUSE_RIGHT);
-  } else {
-    if (Mouse.isPressed(MOUSE_RIGHT)) Mouse.release(MOUSE_RIGHT);
+  if (wheel != 0) {
+    Mouse.move(0, 0, (int)wheel);
   }
-
-  if (buttons & 0x04) {
-    if (!Mouse.isPressed(MOUSE_MIDDLE)) Mouse.press(MOUSE_MIDDLE);
-  } else {
-    if (Mouse.isPressed(MOUSE_MIDDLE)) Mouse.release(MOUSE_MIDDLE);
-  }
-
-  if (wheel != 0) Mouse.move(0, 0, (int)wheel);
 }

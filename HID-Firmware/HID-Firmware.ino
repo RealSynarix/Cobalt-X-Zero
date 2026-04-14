@@ -1,3 +1,5 @@
+// BOOTLOADER_FLAG: Change 0x0 to 0x4000 when using a bootloader in build_opt.h
+
 #include "system.h"
 #include "usb.h"
 #include "timer.h"
@@ -5,6 +7,8 @@
 #include "usb_hid.h"
 
 void setup(void) {
+  SystemClock_Config();
+  delay(10);
   pipeline_init();
   usb_hid_init();
   usb_init();
@@ -12,10 +16,10 @@ void setup(void) {
 }
 
 void loop(void) {
-  usb_sync_tick();
-
-  pipeline_report_t report;
-  if (pipeline_dequeue(&report)) {
-    usb_hid_send_report(report.buttons, report.wheel);
+  if (usb_sof_detected()) {
+    pipeline_report_t report;
+    if (pipeline_get_ready_report(&report)) {
+      usb_hid_send_report(report.buttons, report.wheel);
+    }
   }
 }

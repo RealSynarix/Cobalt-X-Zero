@@ -2,6 +2,7 @@
 #include <stm32g4xx_hal.h>
 
 void SystemClock_Config(void) {
+  __HAL_RCC_PWR_CLK_ENABLE();
   HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
 
   RCC_OscInitTypeDef osc = { 0 };
@@ -17,6 +18,9 @@ void SystemClock_Config(void) {
   osc.PLL.PLLQ = RCC_PLLQ_DIV2;
   osc.PLL.PLLR = RCC_PLLR_DIV2;
   HAL_RCC_OscConfig(&osc);
+
+  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET)
+    ;
 
   RCC_ClkInitTypeDef clk = { 0 };
   clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;

@@ -1,4 +1,4 @@
-PROJECT ARCHIVE: Tue Apr 14 10:15:31 PM AEST 2026
+PROJECT ARCHIVE: Tue Apr 14 11:33:20 PM AEST 2026
 Configuration: Full structure included; .md/.png contents omitted.
 ------------------------------------------------
 
@@ -55,60 +55,46 @@ II. FILE CONTENTS
 ================================================
 #!/usr/bin/env bash
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FQBN="${FQBN:-STMicroelectronics:stm32:GenG4}"
 CLI="${ARDUINO_CLI:-arduino-cli}"
 OUT="$ROOT/build"
-
 HID_SRC="$ROOT/HID-Firmware"
 BOOT_SRC="$ROOT/Boot-Select"
 VDRIVE_SRC="$ROOT/vDrive-Firmware"
-
 HID_OUT="$OUT/hid"
 BOOT_OUT="$OUT/boot"
 VDRIVE_OUT="$OUT/vdrive"
 FLASH_BIN="$OUT/cobalt_x_zero_combined.bin"
-
 rm -rf "$OUT"
 mkdir -p "$HID_OUT" "$BOOT_OUT" "$VDRIVE_OUT"
-
 "$CLI" compile -b "$FQBN" --output-dir "$BOOT_OUT" "$BOOT_SRC"
 "$CLI" compile -b "$FQBN" --output-dir "$HID_OUT" "$HID_SRC"
 "$CLI" compile -b "$FQBN" --output-dir "$VDRIVE_OUT" "$VDRIVE_SRC"
-
 HID_BIN="$(find "$HID_OUT" -maxdepth 1 -name '*.bin' | head -n1)"
 BOOT_BIN="$(find "$BOOT_OUT" -maxdepth 1 -name '*.bin' | head -n1)"
 VDRIVE_BIN="$(find "$VDRIVE_OUT" -maxdepth 1 -name '*.bin' | head -n1)"
-
 python3 - "$FLASH_BIN" "$BOOT_BIN" "$HID_BIN" "$VDRIVE_BIN" <<'PY'
 import sys
 from pathlib import Path
-
 out_path = Path(sys.argv[1])
 boot = Path(sys.argv[2]).read_bytes()
 hid = Path(sys.argv[3]).read_bytes()
 vdrive = Path(sys.argv[4]).read_bytes()
-
 FLASH_SIZE = 128 * 1024
 BASE_ADDR = 0x08000000
-
 BOOT_ADDR   = 0x08000000
 HID_ADDR    = 0x08004000
 VDRIVE_ADDR = 0x08014000
-
 image = bytearray([0xFF]) * FLASH_SIZE
-
 def place(addr, data):
     offset = addr - BASE_ADDR
     if offset < 0 or offset + len(data) > FLASH_SIZE:
         sys.exit(1)
     image[offset:offset + len(data)] = data
-
 place(BOOT_ADDR, boot)
 place(HID_ADDR, hid)
 place(VDRIVE_ADDR, vdrive)
-
 out_path.write_bytes(image)
 PY
 
@@ -118,16 +104,13 @@ PY
 ================================================
 #!/usr/bin/env bash
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLI="${STM32_PROGRAMMER_CLI:-STM32_Programmer_CLI}"
 PORT="${PORT:-usb1}"
 BIN="$ROOT/build/cobalt_x_zero_combined.bin"
-
 if [[ ! -f "$BIN" ]]; then
     exit 1
 fi
-
 "$CLI" -c port="$PORT" -w "$BIN" 0x08000000 -v -rst
 
 
@@ -619,6 +602,7 @@ void timer_resync(void) {
 #include "usb_hid.h"
 
 void setup(void) {
+  SystemClock_Config();
   pipeline_init();
   usb_hid_init();
   usb_init();
@@ -626,11 +610,11 @@ void setup(void) {
 }
 
 void loop(void) {
-  usb_sync_tick();
-
-  pipeline_report_t report;
-  if (pipeline_dequeue(&report)) {
-    usb_hid_send_report(report.buttons, report.wheel);
+  if (usb_sof_detected()) {
+    pipeline_report_t report;
+    if (pipeline_get_ready_report(&report)) {
+      usb_hid_send_report(report.buttons, report.wheel);
+    }
   }
 }
 
@@ -697,11 +681,13 @@ void usb_init(void) {
   USB->ISTR &= ~USB_ISTR_SOF;
 }
 
-void usb_sync_tick(void) {
+uint8_t usb_sof_detected(void) {
   if (USB->ISTR & USB_ISTR_SOF) {
     USB->ISTR &= ~USB_ISTR_SOF;
     timer_resync();
+    return 1;
   }
+  return 0;
 }
 
 ================================================
@@ -728,12 +714,14 @@ extern "C" {
 #ifndef USB_H
 #define USB_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
   void usb_init(void);
-  void usb_sync_tick(void);
+  uint8_t usb_sof_detected(void);
 
 #ifdef __cplusplus
 }
@@ -767,58 +755,39 @@ extern "C" {
 #include <stm32g4xx.h>
 
 #define DEBOUNCE_LOCKOUT 160u
-#define QUEUE_SIZE 8u
-#define QUEUE_MASK (QUEUE_SIZE - 1u)
 #define ENCODER_DIVIDER 2
 #define TICKS_PER_FRAME 32u
 
 static volatile uint8_t current_btn_state = 0;
-static volatile uint16_t lmb_lock = 0;
-static volatile uint16_t rmb_lock = 0;
-static volatile uint16_t mmb_lock = 0;
-static volatile uint16_t mac_lock = 0;
+static volatile uint16_t locks[4] = { 0, 0, 0, 0 };
+static volatile int32_t wheel_accum = 0;
+static volatile uint32_t last_enc_count = 0;
+static volatile uint8_t frame_tick = 0;
 
-static volatile pipeline_report_t report_queue[QUEUE_SIZE];
-static volatile uint8_t q_head = 0;
-static volatile uint8_t q_tail = 0;
+static volatile pipeline_report_t ready_report = { 0, 0 };
+static volatile uint8_t report_pending = 0;
 
-static uint32_t last_enc_count = 0;
-static int32_t wheel_accum = 0;
-static uint8_t frame_tick = 0;
-
-static inline void q_push(pipeline_report_t r) {
-  uint8_t next = (q_head + 1u) & QUEUE_MASK;
-  if (next != q_tail) {
-    report_queue[q_head].buttons = r.buttons;
-    report_queue[q_head].wheel = r.wheel;
-    q_head = next;
-  }
-}
-
-static inline void debounce_logic(volatile uint16_t *lock, uint8_t bit_idx, uint8_t pin) {
-  if (*lock > 0) {
-    (*lock)--;
+static inline void debounce_step(uint8_t idx, uint8_t pin) {
+  if (locks[idx] > 0) {
+    locks[idx]--;
     return;
   }
-  uint8_t physical = !((GPIOB->IDR >> pin) & 1u);
-  uint8_t logical = (current_btn_state >> bit_idx) & 1u;
-  if (physical != logical) {
-    if (physical) current_btn_state |= (1u << bit_idx);
-    else current_btn_state &= ~(1u << bit_idx);
-    *lock = DEBOUNCE_LOCKOUT;
-    pipeline_report_t r = { current_btn_state, 0 };
-    q_push(r);
+  uint8_t phys = !((GPIOB->IDR >> pin) & 1u);
+  uint8_t log = (current_btn_state >> idx) & 1u;
+  if (phys != log) {
+    if (phys) current_btn_state |= (1u << idx);
+    else current_btn_state &= ~(1u << idx);
+    locks[idx] = DEBOUNCE_LOCKOUT;
   }
 }
 
 void pipeline_init(void) {
-  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN;
   (void)RCC->AHB2ENR;
+
   GPIOB->MODER &= ~(0xFFu << 6u);
   GPIOB->PUPDR = (GPIOB->PUPDR & ~(0xFFu << 6u)) | (0x55u << 6u);
 
-  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
-  (void)RCC->AHB2ENR;
   GPIOA->MODER = (GPIOA->MODER & ~0x0Fu) | 0x0Au;
   GPIOA->AFR[0] = (GPIOA->AFR[0] & ~0xFFu) | 0x11u;
   GPIOA->PUPDR = (GPIOA->PUPDR & ~0x0Fu) | 0x05u;
@@ -828,49 +797,40 @@ void pipeline_init(void) {
   (void)RCC->APB1ENR1;
 
   TIM2->CR1 = 0;
-  TIM2->SMCR = TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0;
-  TIM2->CCMR1 = TIM_CCMR1_CC1S_0
-                | (0x0Fu << TIM_CCMR1_IC1F_Pos)
-                | TIM_CCMR1_CC2S_0
-                | (0x0Fu << TIM_CCMR1_IC2F_Pos);
+  TIM2->SMCR = 3;
+  TIM2->CCMR1 = 0xF1F1;
   TIM2->CCER = 0;
-  TIM2->PSC = 0;
-  TIM2->ARR = 0xFFFFFFFFu;
+  TIM2->ARR = 0xFFFFFFFF;
   TIM2->CNT = 0;
-  TIM2->EGR = TIM_EGR_UG;
-  TIM2->CR1 = TIM_CR1_CEN;
-  last_enc_count = 0;
-  wheel_accum = 0;
-  frame_tick = 0;
+  TIM2->CR1 = 1;
 }
 
 void pipeline_tick(void) {
-  debounce_logic(&lmb_lock, 0, 3);
-  debounce_logic(&rmb_lock, 1, 4);
-  debounce_logic(&mmb_lock, 2, 5);
-  debounce_logic(&mac_lock, 3, 6);
+  debounce_step(0, 3);
+  debounce_step(1, 4);
+  debounce_step(2, 5);
+  debounce_step(3, 6);
 
-  uint32_t current_count = TIM2->CNT;
-  wheel_accum += (int32_t)(current_count - last_enc_count);
-  last_enc_count = current_count;
+  uint32_t enc = TIM2->CNT;
+  wheel_accum += (int32_t)(enc - last_enc_count);
+  last_enc_count = enc;
+
   if (++frame_tick >= TICKS_PER_FRAME) {
     frame_tick = 0;
     int32_t steps = wheel_accum / ENCODER_DIVIDER;
-    wheel_accum -= steps * ENCODER_DIVIDER;
-    if (steps != 0) {
-      int8_t w = (steps > 127) ? 127 : (steps < -127) ? -127
-                                                      : (int8_t)steps;
-      pipeline_report_t r = { current_btn_state, w };
-      q_push(r);
-    }
+    wheel_accum %= ENCODER_DIVIDER;
+
+    ready_report.buttons = current_btn_state;
+    ready_report.wheel = (steps > 127) ? 127 : (steps < -127) ? -127
+                                                              : (int8_t)steps;
+    report_pending = 1;
   }
 }
 
-uint8_t pipeline_dequeue(pipeline_report_t *out) {
-  if (q_head == q_tail) return 0;
-  out->buttons = report_queue[q_tail].buttons;
-  out->wheel = report_queue[q_tail].wheel;
-  q_tail = (q_tail + 1u) & QUEUE_MASK;
+uint8_t pipeline_get_ready_report(pipeline_report_t *out) {
+  out->buttons = current_btn_state;
+  out->wheel = ready_report.wheel;
+  ready_report.wheel = 0;
   return 1;
 }
 
@@ -906,30 +866,22 @@ uint8_t pipeline_dequeue(pipeline_report_t *out) {
 #include <Arduino.h>
 #include <Mouse.h>
 
+static uint8_t last_sent = 0;
+
 void usb_hid_init(void) {
   Mouse.begin();
 }
 
 void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
-  if (buttons & 0x01) {
-    if (!Mouse.isPressed(MOUSE_LEFT)) Mouse.press(MOUSE_LEFT);
-  } else {
-    if (Mouse.isPressed(MOUSE_LEFT)) Mouse.release(MOUSE_LEFT);
+  if (buttons != last_sent) {
+    if ((buttons & 0x01) != (last_sent & 0x01)) (buttons & 0x01) ? Mouse.press(MOUSE_LEFT) : Mouse.release(MOUSE_LEFT);
+    if ((buttons & 0x02) != (last_sent & 0x02)) (buttons & 0x02) ? Mouse.press(MOUSE_RIGHT) : Mouse.release(MOUSE_RIGHT);
+    if ((buttons & 0x04) != (last_sent & 0x04)) (buttons & 0x04) ? Mouse.press(MOUSE_MIDDLE) : Mouse.release(MOUSE_MIDDLE);
+    last_sent = buttons;
   }
-
-  if (buttons & 0x02) {
-    if (!Mouse.isPressed(MOUSE_RIGHT)) Mouse.press(MOUSE_RIGHT);
-  } else {
-    if (Mouse.isPressed(MOUSE_RIGHT)) Mouse.release(MOUSE_RIGHT);
+  if (wheel != 0) {
+    Mouse.move(0, 0, (int)wheel);
   }
-
-  if (buttons & 0x04) {
-    if (!Mouse.isPressed(MOUSE_MIDDLE)) Mouse.press(MOUSE_MIDDLE);
-  } else {
-    if (Mouse.isPressed(MOUSE_MIDDLE)) Mouse.release(MOUSE_MIDDLE);
-  }
-
-  if (wheel != 0) Mouse.move(0, 0, (int)wheel);
 }
 
 ================================================
@@ -996,7 +948,7 @@ extern "C" {
 
   void pipeline_init(void);
   void pipeline_tick(void);
-  uint8_t pipeline_dequeue(pipeline_report_t *out);
+  uint8_t pipeline_get_ready_report(pipeline_report_t *out);
 
 #ifdef __cplusplus
 }

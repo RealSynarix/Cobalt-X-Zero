@@ -14,7 +14,7 @@ extern "C" {
 
   void pipeline_init(void);
   void pipeline_tick(void);
-  uint8_t pipeline_dequeue(pipeline_report_t *out);
+  uint8_t pipeline_get_ready_report(pipeline_report_t *out);
 
 #ifdef __cplusplus
 }
