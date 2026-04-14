@@ -1,4 +1,3 @@
-
 #pragma once
 
 #undef USB_VID

@@ -1,0 +1,507 @@
+CODEBASE SUMMARY: .c, .cpp, .h, .ino
+Generated on: Tue Apr 14 09:28:20 PM AEST 2026
+------------------------------------------------
+PROJECT STRUCTURE:
+.
+├── Boot-Select
+│   └── boot-select.ino
+├── HID-Firmware
+│   ├── build_opt.h
+│   ├── cobalt-x_zero.ino
+│   ├── config.cpp
+│   ├── config.h
+│   ├── led.cpp
+│   ├── led.h
+│   ├── pipeline.cpp
+│   ├── pipeline.h
+│   ├── spi.cpp
+│   ├── spi.h
+│   ├── system.cpp
+│   ├── system.h
+│   ├── timer.cpp
+│   ├── timer.h
+│   ├── usb.cpp
+│   ├── usbd_conf_custom.h
+│   ├── usb.h
+│   ├── usb_hid.cpp
+│   └── usb_hid.h
+└── vDrive-Firmware
+    ├── build_opt.h
+    ├── system.cpp
+    ├── system.h
+    ├── usbd_conf_custom.h
+    ├── vdrive.cpp
+    ├── vdrive_fw.ino
+    └── vdrive.h
+
+4 directories, 27 files
+
+------------------------------------------------
+
+FILE CONTENTS:
+================================================
+ FILE: ./vDrive-Firmware/system.cpp
+================================================
+
+
+================================================
+ FILE: ./vDrive-Firmware/vdrive.h
+================================================
+
+
+================================================
+ FILE: ./vDrive-Firmware/system.h
+================================================
+
+
+================================================
+ FILE: ./vDrive-Firmware/vdrive.cpp
+================================================
+
+
+================================================
+ FILE: ./vDrive-Firmware/build_opt.h
+================================================
+
+
+================================================
+ FILE: ./vDrive-Firmware/usbd_conf_custom.h
+================================================
+
+
+================================================
+ FILE: ./vDrive-Firmware/vdrive_fw.ino
+================================================
+
+
+================================================
+ FILE: ./Boot-Select/boot-select.ino
+================================================
+
+
+================================================
+ FILE: ./HID-Firmware/led.cpp
+================================================
+
+
+================================================
+ FILE: ./HID-Firmware/timer.cpp
+================================================
+#include "timer.h"
+#include "pipeline.h"
+#include <HardwareTimer.h>
+
+static HardwareTimer *htim = nullptr;
+
+static void timer_callback(void) {
+  pipeline_tick();
+}
+
+void timer_init(void) {
+  htim = new HardwareTimer(TIM3);
+  htim->setOverflow(32000, HERTZ_FORMAT);
+  htim->attachInterrupt(timer_callback);
+  htim->setInterruptPriority(0, 0);
+  htim->resume();
+}
+
+void timer_resync(void) {
+  if (htim) {
+    TIM3->CNT = 0;
+  }
+}
+
+================================================
+ FILE: ./HID-Firmware/system.cpp
+================================================
+#include "system.h"
+#include <stm32g4xx_hal.h>
+
+void SystemClock_Config(void) {
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+
+  RCC_OscInitTypeDef osc = { 0 };
+  osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
+  osc.HSIState = RCC_HSI_ON;
+  osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  osc.HSI48State = RCC_HSI48_ON;
+  osc.PLL.PLLState = RCC_PLL_ON;
+  osc.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  osc.PLL.PLLM = RCC_PLLM_DIV4;
+  osc.PLL.PLLN = 85;
+  osc.PLL.PLLP = RCC_PLLP_DIV2;
+  osc.PLL.PLLQ = RCC_PLLQ_DIV2;
+  osc.PLL.PLLR = RCC_PLLR_DIV2;
+  HAL_RCC_OscConfig(&osc);
+
+  RCC_ClkInitTypeDef clk = { 0 };
+  clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  clk.APB1CLKDivider = RCC_HCLK_DIV1;
+  clk.APB2CLKDivider = RCC_HCLK_DIV1;
+  HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
+
+  RCC_PeriphCLKInitTypeDef periph = { 0 };
+  periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+  HAL_RCCEx_PeriphCLKConfig(&periph);
+
+  __HAL_RCC_CRS_CLK_ENABLE();
+  RCC_CRSInitTypeDef crs = { 0 };
+  crs.Prescaler = RCC_CRS_SYNC_DIV1;
+  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
+  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
+  crs.ErrorLimitValue = 34;
+  crs.HSI48CalibrationValue = 32;
+  HAL_RCCEx_CRSConfig(&crs);
+}
+
+================================================
+ FILE: ./HID-Firmware/led.h
+================================================
+
+
+================================================
+ FILE: ./HID-Firmware/usb.cpp
+================================================
+#include "usb.h"
+#include "timer.h"
+#include <stm32g4xx_hal.h>
+
+void usb_init(void) {
+  USB->CNTR |= USB_CNTR_SOFM;
+  USB->ISTR &= ~USB_ISTR_SOF;
+}
+
+void usb_sync_tick(void) {
+  if (USB->ISTR & USB_ISTR_SOF) {
+    USB->ISTR &= ~USB_ISTR_SOF;
+    timer_resync();
+  }
+}
+
+================================================
+ FILE: ./HID-Firmware/system.h
+================================================
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void SystemClock_Config(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+================================================
+ FILE: ./HID-Firmware/usb.h
+================================================
+#ifndef USB_H
+#define USB_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void usb_init(void);
+  void usb_sync_tick(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+================================================
+ FILE: ./HID-Firmware/config.cpp
+================================================
+
+
+================================================
+ FILE: ./HID-Firmware/build_opt.h
+================================================
+-DUSBCON
+-DUSBD_USE_HID_COMPOSITE
+-DHAL_PCD_MODULE_ENABLED
+-include usbd_conf_custom.h
+
+================================================
+ FILE: ./HID-Firmware/spi.h
+================================================
+
+
+================================================
+ FILE: ./HID-Firmware/pipeline.cpp
+================================================
+#include "pipeline.h"
+#include <stm32g4xx.h>
+
+#define DEBOUNCE_LOCKOUT 160u
+#define QUEUE_SIZE 8u
+#define QUEUE_MASK (QUEUE_SIZE - 1u)
+#define ENCODER_DIVIDER 2
+#define TICKS_PER_FRAME 32u
+
+static volatile uint8_t current_btn_state = 0;
+static volatile uint16_t lmb_lock = 0;
+static volatile uint16_t rmb_lock = 0;
+static volatile uint16_t mmb_lock = 0;
+static volatile uint16_t mac_lock = 0;
+
+static volatile pipeline_report_t report_queue[QUEUE_SIZE];
+static volatile uint8_t q_head = 0;
+static volatile uint8_t q_tail = 0;
+
+static uint32_t last_enc_count = 0;
+static int32_t wheel_accum = 0;
+static uint8_t frame_tick = 0;
+
+static inline void q_push(pipeline_report_t r) {
+  uint8_t next = (q_head + 1u) & QUEUE_MASK;
+  if (next != q_tail) {
+    report_queue[q_head].buttons = r.buttons;
+    report_queue[q_head].wheel = r.wheel;
+    q_head = next;
+  }
+}
+
+static inline void debounce_logic(volatile uint16_t *lock, uint8_t bit_idx, uint8_t pin) {
+  if (*lock > 0) {
+    (*lock)--;
+    return;
+  }
+  uint8_t physical = !((GPIOB->IDR >> pin) & 1u);
+  uint8_t logical = (current_btn_state >> bit_idx) & 1u;
+  if (physical != logical) {
+    if (physical) current_btn_state |= (1u << bit_idx);
+    else current_btn_state &= ~(1u << bit_idx);
+    *lock = DEBOUNCE_LOCKOUT;
+    pipeline_report_t r = { current_btn_state, 0 };
+    q_push(r);
+  }
+}
+
+void pipeline_init(void) {
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+  (void)RCC->AHB2ENR;
+  GPIOB->MODER &= ~(0xFFu << 6u);
+  GPIOB->PUPDR = (GPIOB->PUPDR & ~(0xFFu << 6u)) | (0x55u << 6u);
+
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+  (void)RCC->AHB2ENR;
+  GPIOA->MODER = (GPIOA->MODER & ~0x0Fu) | 0x0Au;
+  GPIOA->AFR[0] = (GPIOA->AFR[0] & ~0xFFu) | 0x11u;
+  GPIOA->PUPDR = (GPIOA->PUPDR & ~0x0Fu) | 0x05u;
+  GPIOA->OSPEEDR = (GPIOA->OSPEEDR & ~0x0Fu) | 0x0Fu;
+
+  RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
+  (void)RCC->APB1ENR1;
+
+  TIM2->CR1 = 0;
+  TIM2->SMCR = TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0;
+  TIM2->CCMR1 = TIM_CCMR1_CC1S_0
+                | (0x0Fu << TIM_CCMR1_IC1F_Pos)
+                | TIM_CCMR1_CC2S_0
+                | (0x0Fu << TIM_CCMR1_IC2F_Pos);
+  TIM2->CCER = 0;
+  TIM2->PSC = 0;
+  TIM2->ARR = 0xFFFFFFFFu;
+  TIM2->CNT = 0;
+  TIM2->EGR = TIM_EGR_UG;
+  TIM2->CR1 = TIM_CR1_CEN;
+  last_enc_count = 0;
+  wheel_accum = 0;
+  frame_tick = 0;
+}
+
+void pipeline_tick(void) {
+  debounce_logic(&lmb_lock, 0, 3);
+  debounce_logic(&rmb_lock, 1, 4);
+  debounce_logic(&mmb_lock, 2, 5);
+  debounce_logic(&mac_lock, 3, 6);
+
+  uint32_t current_count = TIM2->CNT;
+  wheel_accum += (int32_t)(current_count - last_enc_count);
+  last_enc_count = current_count;
+  if (++frame_tick >= TICKS_PER_FRAME) {
+    frame_tick = 0;
+    int32_t steps = wheel_accum / ENCODER_DIVIDER;
+    wheel_accum -= steps * ENCODER_DIVIDER;
+    if (steps != 0) {
+      int8_t w = (steps > 127) ? 127 : (steps < -127) ? -127
+                                                      : (int8_t)steps;
+      pipeline_report_t r = { current_btn_state, w };
+      q_push(r);
+    }
+  }
+}
+
+uint8_t pipeline_dequeue(pipeline_report_t *out) {
+  if (q_head == q_tail) return 0;
+  out->buttons = report_queue[q_tail].buttons;
+  out->wheel = report_queue[q_tail].wheel;
+  q_tail = (q_tail + 1u) & QUEUE_MASK;
+  return 1;
+}
+
+================================================
+ FILE: ./HID-Firmware/usbd_conf_custom.h
+================================================
+#pragma once
+
+#undef USB_VID
+#define USB_VID 0x1209
+
+#undef USB_PID
+#define USB_PID 0xC0BA
+
+#undef USB_MANUFACTURER_STRING
+#define USB_MANUFACTURER_STRING "Synarix"
+
+#undef USB_PRODUCT_STRING
+#define USB_PRODUCT_STRING "Cobalt-X Zero"
+
+#undef HID_FS_BINTERVAL
+#define HID_FS_BINTERVAL 0x01
+
+================================================
+ FILE: ./HID-Firmware/config.h
+================================================
+
+
+================================================
+ FILE: ./HID-Firmware/usb_hid.cpp
+================================================
+#include "usb_hid.h"
+#include <Arduino.h>
+#include <Mouse.h>
+
+void usb_hid_init(void) {
+  Mouse.begin();
+}
+
+void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
+  if (buttons & 0x01) {
+    if (!Mouse.isPressed(MOUSE_LEFT)) Mouse.press(MOUSE_LEFT);
+  } else {
+    if (Mouse.isPressed(MOUSE_LEFT)) Mouse.release(MOUSE_LEFT);
+  }
+
+  if (buttons & 0x02) {
+    if (!Mouse.isPressed(MOUSE_RIGHT)) Mouse.press(MOUSE_RIGHT);
+  } else {
+    if (Mouse.isPressed(MOUSE_RIGHT)) Mouse.release(MOUSE_RIGHT);
+  }
+
+  if (buttons & 0x04) {
+    if (!Mouse.isPressed(MOUSE_MIDDLE)) Mouse.press(MOUSE_MIDDLE);
+  } else {
+    if (Mouse.isPressed(MOUSE_MIDDLE)) Mouse.release(MOUSE_MIDDLE);
+  }
+
+  if (wheel != 0) Mouse.move(0, 0, (int)wheel);
+}
+
+================================================
+ FILE: ./HID-Firmware/cobalt-x_zero.ino
+================================================
+#include "system.h"
+#include "usb.h"
+#include "timer.h"
+#include "pipeline.h"
+#include "usb_hid.h"
+
+void setup(void) {
+  pipeline_init();
+  usb_hid_init();
+  usb_init();
+  timer_init();
+}
+
+void loop(void) {
+  usb_sync_tick();
+
+  pipeline_report_t report;
+  if (pipeline_dequeue(&report)) {
+    usb_hid_send_report(report.buttons, report.wheel);
+  }
+}
+
+================================================
+ FILE: ./HID-Firmware/timer.h
+================================================
+#ifndef TIMER_H
+#define TIMER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void timer_init(void);
+  void timer_resync(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+================================================
+ FILE: ./HID-Firmware/spi.cpp
+================================================
+
+
+================================================
+ FILE: ./HID-Firmware/usb_hid.h
+================================================
+#ifndef USB_HID_H
+#define USB_HID_H
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void usb_hid_init(void);
+  void usb_hid_send_report(uint8_t buttons, int8_t wheel);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+================================================
+ FILE: ./HID-Firmware/pipeline.h
+================================================
+#ifndef PIPELINE_H
+#define PIPELINE_H
+
+#include <stdint.h>
+
+typedef struct {
+  uint8_t buttons;
+  int8_t wheel;
+} pipeline_report_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void pipeline_init(void);
+  void pipeline_tick(void);
+  uint8_t pipeline_dequeue(pipeline_report_t *out);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
