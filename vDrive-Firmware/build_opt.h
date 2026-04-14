@@ -1,0 +1,5 @@
+-DUSBCON
+-DUSBD_USE_MSC
+-DHAL_PCD_MODULE_ENABLED
+-DVECT_TAB_OFFSET=0x14000
+-include usbd_conf_custom.h
