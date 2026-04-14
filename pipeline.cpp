@@ -4,7 +4,7 @@
 #define DEBOUNCE_LOCKOUT 160u
 #define QUEUE_SIZE 8u
 #define QUEUE_MASK (QUEUE_SIZE - 1u)
-#define ENCODER_DIVIDER 4
+#define ENCODER_DIVIDER 2
 #define TICKS_PER_FRAME 32u
 
 static volatile uint8_t current_btn_state = 0;
@@ -74,7 +74,6 @@ void pipeline_init(void) {
   TIM2->CNT = 0;
   TIM2->EGR = TIM_EGR_UG;
   TIM2->CR1 = TIM_CR1_CEN;
-
   last_enc_count = 0;
   wheel_accum = 0;
   frame_tick = 0;
@@ -89,7 +88,6 @@ void pipeline_tick(void) {
   uint32_t current_count = TIM2->CNT;
   wheel_accum += (int32_t)(current_count - last_enc_count);
   last_enc_count = current_count;
-
   if (++frame_tick >= TICKS_PER_FRAME) {
     frame_tick = 0;
     int32_t steps = wheel_accum / ENCODER_DIVIDER;
