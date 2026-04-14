@@ -1,4 +1,4 @@
-PROJECT ARCHIVE: Tue Apr 14 11:33:20 PM AEST 2026
+PROJECT ARCHIVE: Wed Apr 15 12:45:29 AM AEST 2026
 Configuration: Full structure included; .md/.png contents omitted.
 ------------------------------------------------
 
@@ -9,11 +9,11 @@ I. DIRECTORY STRUCTURE
 ├── ExtDrivers
 ├── HID-Firmware
 │   ├── build_opt.h
-│   ├── config.cpp
-│   ├── config.h
 │   ├── HID-Firmware.ino
 │   ├── led.cpp
 │   ├── led.h
+│   ├── macro.cpp
+│   ├── macro.h
 │   ├── pipeline.cpp
 │   ├── pipeline.h
 │   ├── spi.cpp
@@ -595,6 +595,8 @@ void timer_resync(void) {
 ================================================
  PATH: HID-Firmware/HID-Firmware.ino
 ================================================
+// BOOTLOADER_FLAG: Change 0x0 to 0x4000 when using a bootloader in build_opt.h
+
 #include "system.h"
 #include "usb.h"
 #include "timer.h"
@@ -603,6 +605,7 @@ void timer_resync(void) {
 
 void setup(void) {
   SystemClock_Config();
+  delay(10);
   pipeline_init();
   usb_hid_init();
   usb_init();
@@ -625,6 +628,7 @@ void loop(void) {
 #include <stm32g4xx_hal.h>
 
 void SystemClock_Config(void) {
+  __HAL_RCC_PWR_CLK_ENABLE();
   HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
 
   RCC_OscInitTypeDef osc = { 0 };
@@ -640,6 +644,9 @@ void SystemClock_Config(void) {
   osc.PLL.PLLQ = RCC_PLLQ_DIV2;
   osc.PLL.PLLR = RCC_PLLR_DIV2;
   HAL_RCC_OscConfig(&osc);
+
+  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET)
+    ;
 
   RCC_ClkInitTypeDef clk = { 0 };
   clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
@@ -676,14 +683,17 @@ void SystemClock_Config(void) {
 #include "timer.h"
 #include <stm32g4xx_hal.h>
 
+static uint16_t last_frame = 0xFFFF;
+
 void usb_init(void) {
   USB->CNTR |= USB_CNTR_SOFM;
-  USB->ISTR &= ~USB_ISTR_SOF;
+  USB->ISTR = (uint16_t)~USB_ISTR_SOF;
 }
 
 uint8_t usb_sof_detected(void) {
-  if (USB->ISTR & USB_ISTR_SOF) {
-    USB->ISTR &= ~USB_ISTR_SOF;
+  uint16_t current_frame = (uint16_t)(USB->FNR & USB_FNR_FN);
+  if (current_frame != last_frame) {
+    last_frame = current_frame;
     timer_resync();
     return 1;
   }
@@ -730,17 +740,12 @@ extern "C" {
 #endif
 
 ================================================
- PATH: HID-Firmware/config.cpp
-================================================
-
-
-================================================
  PATH: HID-Firmware/build_opt.h
 ================================================
 -DUSBCON
--DUSBD_USE_HID_COMPOSITE
+-DUSBD_USE_HID
 -DHAL_PCD_MODULE_ENABLED
--DVECT_TAB_OFFSET=0x4000
+-DVECT_TAB_OFFSET=0x0
 -include usbd_conf_custom.h
 
 ================================================
@@ -752,6 +757,7 @@ extern "C" {
  PATH: HID-Firmware/pipeline.cpp
 ================================================
 #include "pipeline.h"
+#include "macro.h"
 #include <stm32g4xx.h>
 
 #define DEBOUNCE_LOCKOUT 160u
@@ -763,9 +769,7 @@ static volatile uint16_t locks[4] = { 0, 0, 0, 0 };
 static volatile int32_t wheel_accum = 0;
 static volatile uint32_t last_enc_count = 0;
 static volatile uint8_t frame_tick = 0;
-
 static volatile pipeline_report_t ready_report = { 0, 0 };
-static volatile uint8_t report_pending = 0;
 
 static inline void debounce_step(uint8_t idx, uint8_t pin) {
   if (locks[idx] > 0) {
@@ -784,10 +788,8 @@ static inline void debounce_step(uint8_t idx, uint8_t pin) {
 void pipeline_init(void) {
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN;
   (void)RCC->AHB2ENR;
-
   GPIOB->MODER &= ~(0xFFu << 6u);
   GPIOB->PUPDR = (GPIOB->PUPDR & ~(0xFFu << 6u)) | (0x55u << 6u);
-
   GPIOA->MODER = (GPIOA->MODER & ~0x0Fu) | 0x0Au;
   GPIOA->AFR[0] = (GPIOA->AFR[0] & ~0xFFu) | 0x11u;
   GPIOA->PUPDR = (GPIOA->PUPDR & ~0x0Fu) | 0x05u;
@@ -795,7 +797,6 @@ void pipeline_init(void) {
 
   RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
   (void)RCC->APB1ENR1;
-
   TIM2->CR1 = 0;
   TIM2->SMCR = 3;
   TIM2->CCMR1 = 0xF1F1;
@@ -803,6 +804,8 @@ void pipeline_init(void) {
   TIM2->ARR = 0xFFFFFFFF;
   TIM2->CNT = 0;
   TIM2->CR1 = 1;
+
+  macro_init();
 }
 
 void pipeline_tick(void) {
@@ -812,23 +815,23 @@ void pipeline_tick(void) {
   debounce_step(3, 6);
 
   uint32_t enc = TIM2->CNT;
-  wheel_accum += (int32_t)(enc - last_enc_count);
+  int32_t delta = (int32_t)(enc - last_enc_count);
   last_enc_count = enc;
+
+  ready_report.buttons = macro_update(current_btn_state, &delta);
+  wheel_accum += delta;
 
   if (++frame_tick >= TICKS_PER_FRAME) {
     frame_tick = 0;
     int32_t steps = wheel_accum / ENCODER_DIVIDER;
     wheel_accum %= ENCODER_DIVIDER;
-
-    ready_report.buttons = current_btn_state;
     ready_report.wheel = (steps > 127) ? 127 : (steps < -127) ? -127
                                                               : (int8_t)steps;
-    report_pending = 1;
   }
 }
 
 uint8_t pipeline_get_ready_report(pipeline_report_t *out) {
-  out->buttons = current_btn_state;
+  out->buttons = ready_report.buttons;
   out->wheel = ready_report.wheel;
   ready_report.wheel = 0;
   return 1;
@@ -855,11 +858,6 @@ uint8_t pipeline_get_ready_report(pipeline_report_t *out) {
 #define HID_FS_BINTERVAL 0x01
 
 ================================================
- PATH: HID-Firmware/config.h
-================================================
-
-
-================================================
  PATH: HID-Firmware/usb_hid.cpp
 ================================================
 #include "usb_hid.h"
@@ -882,6 +880,86 @@ void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
   if (wheel != 0) {
     Mouse.move(0, 0, (int)wheel);
   }
+}
+
+================================================
+ PATH: HID-Firmware/macro.h
+================================================
+#ifndef MACRO_H
+#define MACRO_H
+
+#include <stdint.h>
+
+void macro_init(void);
+uint8_t macro_update(uint8_t buttons, int32_t *delta);
+
+#endif
+
+================================================
+ PATH: HID-Firmware/macro.cpp
+================================================
+#include "macro.h"
+
+static uint8_t hyprx_mode = 0;
+static uint8_t active_target = 0;
+static int32_t pending = 0;
+static uint8_t state = 0;
+static uint8_t last_mac = 0;
+static uint8_t last_mmb = 0;
+
+void macro_init(void) {
+  hyprx_mode = 0;
+  active_target = 0;
+  pending = 0;
+  state = 0;
+  last_mac = 0;
+  last_mmb = 0;
+}
+
+uint8_t macro_update(uint8_t buttons, int32_t *delta) {
+  uint8_t mac = (buttons >> 3) & 1;
+  if (mac && !last_mac) {
+    hyprx_mode = !hyprx_mode;
+    if (!hyprx_mode) {
+      pending = 0;
+      state = 0;
+    }
+  }
+  last_mac = mac;
+
+  uint8_t mmb = (buttons >> 2) & 1;
+  if (hyprx_mode && mmb && !last_mmb) {
+    active_target = !active_target;
+  }
+  last_mmb = mmb;
+
+  if (hyprx_mode) {
+    int32_t d = *delta;
+    if (d != 0) {
+      pending += (d > 0) ? (d * 2) : (-d * 2);
+      *delta = 0;
+    }
+  }
+
+  uint8_t synth = 0;
+  if (hyprx_mode && pending > 0) {
+    if (state) {
+      state = 0;
+      pending--;
+    } else {
+      state = 1;
+    }
+    if (state) synth = (active_target == 0) ? 0x01 : 0x02;
+  } else {
+    state = 0;
+  }
+
+  uint8_t final = buttons;
+  if (hyprx_mode) {
+    final &= ~0x04;
+    final |= synth;
+  }
+  return final & 0x07;
 }
 
 ================================================
