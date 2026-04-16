@@ -1,12 +1,9 @@
-PROJECT ARCHIVE: Wed Apr 15 12:45:29 AM AEST 2026
+PROJECT ARCHIVE: Thu Apr 16 04:12:43 PM AEST 2026
 Configuration: Full structure included; .md/.png contents omitted.
 ------------------------------------------------
 
 I. DIRECTORY STRUCTURE
 .
-├── Boot-Select
-│   └── Boot-Select.ino
-├── ExtDrivers
 ├── HID-Firmware
 │   ├── build_opt.h
 │   ├── HID-Firmware.ino
@@ -27,6 +24,8 @@ I. DIRECTORY STRUCTURE
 │   ├── usb.h
 │   ├── usb_hid.cpp
 │   └── usb_hid.h
+├── HyprBoot
+│   └── Boot-Select.ino
 ├── Information
 │   ├── Cobalt-X Zero: Firmware Datasheet.md
 │   ├── codebase.txt
@@ -39,12 +38,11 @@ I. DIRECTORY STRUCTURE
     ├── build_opt.h
     ├── system.cpp
     ├── system.h
-    ├── usbd_conf_custom.h
     ├── vdrive.cpp
     ├── vDrive-Firmware.ino
     └── vdrive.h
 
-7 directories, 33 files
+6 directories, 32 files
 
 --
 
@@ -121,385 +119,197 @@ fi
 #include <stm32g4xx_hal.h>
 
 void SystemClock_Config(void) {
-    HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
-
-    RCC_OscInitTypeDef osc = { 0 };
-    osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
-    osc.HSIState = RCC_HSI_ON;
-    osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-    osc.HSI48State = RCC_HSI48_ON;
-    osc.PLL.PLLState = RCC_PLL_ON;
-    osc.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-    osc.PLL.PLLM = RCC_PLLM_DIV4;
-    osc.PLL.PLLN = 85;
-    osc.PLL.PLLP = RCC_PLLP_DIV2;
-    osc.PLL.PLLQ = RCC_PLLQ_DIV2;
-    osc.PLL.PLLR = RCC_PLLR_DIV2;
-    HAL_RCC_OscConfig(&osc);
-
-    RCC_ClkInitTypeDef clk = { 0 };
-    clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-    clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    clk.APB1CLKDivider = RCC_HCLK_DIV1;
-    clk.APB2CLKDivider = RCC_HCLK_DIV1;
-    HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
-
-    RCC_PeriphCLKInitTypeDef periph = { 0 };
-    periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
-    periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
-    HAL_RCCEx_PeriphCLKConfig(&periph);
-
-    __HAL_RCC_CRS_CLK_ENABLE();
-    RCC_CRSInitTypeDef crs = { 0 };
-    crs.Prescaler = RCC_CRS_SYNC_DIV1;
-    crs.Source = RCC_CRS_SYNC_SOURCE_USB;
-    crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
-    crs.ErrorLimitValue = 34;
-    crs.HSI48CalibrationValue = 32;
-    HAL_RCCEx_CRSConfig(&crs);
+  __HAL_RCC_PWR_CLK_ENABLE();
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+  RCC_OscInitTypeDef osc = { 0 };
+  osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
+  osc.HSIState = RCC_HSI_ON;
+  osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  osc.HSI48State = RCC_HSI48_ON;
+  osc.PLL.PLLState = RCC_PLL_ON;
+  osc.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  osc.PLL.PLLM = RCC_PLLM_DIV4;
+  osc.PLL.PLLN = 85;
+  osc.PLL.PLLP = RCC_PLLP_DIV2;
+  osc.PLL.PLLQ = RCC_PLLQ_DIV2;
+  osc.PLL.PLLR = RCC_PLLR_DIV2;
+  HAL_RCC_OscConfig(&osc);
+  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET)
+    ;
+  RCC_ClkInitTypeDef clk = { 0 };
+  clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  clk.APB1CLKDivider = RCC_HCLK_DIV1;
+  clk.APB2CLKDivider = RCC_HCLK_DIV1;
+  HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
+  RCC_PeriphCLKInitTypeDef periph = { 0 };
+  periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+  HAL_RCCEx_PeriphCLKConfig(&periph);
+  __HAL_RCC_CRS_CLK_ENABLE();
+  RCC_CRSInitTypeDef crs = { 0 };
+  crs.Prescaler = RCC_CRS_SYNC_DIV1;
+  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
+  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
+  crs.ErrorLimitValue = 34;
+  crs.HSI48CalibrationValue = 32;
+  HAL_RCCEx_CRSConfig(&crs);
 }
-
 
 ================================================
  PATH: vDrive-Firmware/vdrive.h
 ================================================
 #ifndef VDRIVE_H
 #define VDRIVE_H
-
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-    #endif
-
-    void vdrive_init(void);
-    uint8_t vdrive_enabled(void);
-
-    #ifdef __cplusplus
-}
+void vdrive_init(void);
 #endif
-
-#endif
-
 
 ================================================
  PATH: vDrive-Firmware/system.h
 ================================================
 #ifndef SYSTEM_H
 #define SYSTEM_H
-
 #ifdef __cplusplus
 extern "C" {
-    #endif
-
-    void SystemClock_Config(void);
-
-    #ifdef __cplusplus
+#endif
+  void SystemClock_Config(void);
+#ifdef __cplusplus
 }
 #endif
-
 #endif
-
 
 ================================================
  PATH: vDrive-Firmware/vdrive.cpp
 ================================================
 #include "vdrive.h"
-#include <stm32g4xx.h>
+#include <USBMSC.h>
 #include <string.h>
 
-typedef struct {
-    int8_t (*Init)(uint8_t);
-    int8_t (*GetCapacity)(uint8_t, uint32_t *, uint16_t *);
-    int8_t (*IsReady)(uint8_t);
-    int8_t (*IsWriteProtected)(uint8_t);
-    int8_t (*Read)(uint8_t, uint8_t *, uint32_t, uint16_t);
-    int8_t (*Write)(uint8_t, uint8_t *, uint32_t, uint16_t);
-    int8_t (*GetMaxLun)(void);
-    uint8_t *pInquiry;
-} USBD_StorageTypeDef;
+static const uint32_t SECTOR_COUNT = 141312;
+static const uint32_t SECTOR_SIZE = 512;
 
-static volatile uint8_t g_enabled = 0;
+static USBMSC usb_msc;
 
-enum : uint32_t {
-    SECTOR_SIZE = 512u,
-    TOTAL_SECTORS = 141312u,
-    FAT_SECTORS = 69u,
-    ROOT_ENTRIES = 128u,
-    ROOT_SECTORS = ((ROOT_ENTRIES * 32u + (SECTOR_SIZE - 1u)) / SECTOR_SIZE),
-    ROOT_START = 1u + (FAT_SECTORS * 2u),
-    DATA_START = ROOT_START + ROOT_SECTORS
-};
+static const char kConfigIni[] = "[Mouse]\r\nCPI=800\r\n";
 
-static const uint8_t kInquiryData[] = {
-    0x00, 0x80, 0x02, 0x02, 0x1F, 0x00, 0x00, 0x00,
-    'S','y','n','a','r','i','x',' ',
-    'C','o','b','a','l','t','-','X',
-    ' ','C','o','n','f','i','g',' ',
-    '1','.','0','0'
-};
+static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize) {
+  uint8_t* b = (uint8_t*)buffer;
+  memset(b, 0, bufsize);
 
-static inline void w16(uint8_t *p, uint16_t v) {
-    p[0] = (uint8_t)(v & 0xFFu);
-    p[1] = (uint8_t)((v >> 8) & 0xFFu);
-}
-
-static inline void w32(uint8_t *p, uint32_t v) {
-    p[0] = (uint8_t)(v & 0xFFu);
-    p[1] = (uint8_t)((v >> 8) & 0xFFu);
-    p[2] = (uint8_t)((v >> 16) & 0xFFu);
-    p[3] = (uint8_t)((v >> 24) & 0xFFu);
-}
-
-static inline void fill11(uint8_t *dst, const char *src) {
-    for (uint8_t i = 0; i < 11u; ++i) {
-        dst[i] = (uint8_t)src[i];
-    }
-}
-
-static void boot(uint8_t *b) {
-    memset(b, 0, SECTOR_SIZE);
+  if (lba == 0) {
     b[0] = 0xEB;
     b[1] = 0x3C;
     b[2] = 0x90;
-    fill11(b + 3, "MSDOS5.0");
-    w16(b + 11, (uint16_t)SECTOR_SIZE);
-    b[13] = 8u;
-    w16(b + 14, 1u);
-    b[16] = 2u;
-    w16(b + 17, (uint16_t)ROOT_ENTRIES);
-    w16(b + 19, 0u);
-    b[21] = 0xF8u;
-    w16(b + 22, (uint16_t)FAT_SECTORS);
-    w16(b + 24, 63u);
-    w16(b + 26, 255u);
-    w32(b + 28, 0u);
-    w32(b + 32, TOTAL_SECTORS);
-    b[36] = 0x80u;
-    b[37] = 0x00u;
-    b[38] = 0x29u;
-    w32(b + 39, 0x20260414u);
-    fill11(b + 43, "COBALTXCFG ");
-    fill11(b + 54, "FAT16   ");
-    b[510] = 0x55u;
-    b[511] = 0xAAu;
+    memcpy(b + 3, "MSDOS5.0", 8);
+    b[11] = 0x00;
+    b[12] = 0x02;
+    b[13] = 0x40;
+    b[14] = 0x01;
+    b[15] = 0x00;
+    b[16] = 0x02;
+    b[17] = 0x10;
+    b[18] = 0x00;
+    b[19] = 0x00;
+    b[20] = 0x00;
+    b[21] = 0xF8;
+    b[22] = 0x10;
+    b[23] = 0x00;
+    b[24] = 0x01;
+    b[25] = 0x00;
+    b[26] = 0x01;
+    b[27] = 0x00;
+    b[32] = 0x00;
+    b[33] = 0x28;
+    b[34] = 0x02;
+    b[35] = 0x00;
+    b[36] = 0x80;
+    b[37] = 0x00;
+    b[38] = 0x29;
+    b[39] = 0x78;
+    b[40] = 0x56;
+    b[41] = 0x34;
+    b[42] = 0x12;
+    memcpy(b + 43, "COBALT-X  ", 11);
+    memcpy(b + 54, "FAT16   ", 8);
+    b[510] = 0x55;
+    b[511] = 0xAA;
+  } else if (lba == 1 || lba == 17) {
+    b[0] = 0xF8;
+    b[1] = 0xFF;
+    b[2] = 0xFF;
+    b[3] = 0xFF;
+    b[4] = 0xFF;
+    b[5] = 0xFF;
+  } else if (lba == 33) {
+    b[0] = 'C';
+    b[1] = 'O';
+    b[2] = 'N';
+    b[3] = 'F';
+    b[4] = 'I';
+    b[5] = 'G';
+    b[6] = ' ';
+    b[7] = ' ';
+    b[8] = 'I';
+    b[9] = 'N';
+    b[10] = 'I';
+    b[11] = 0x20;
+    b[26] = 0x02;
+    b[27] = 0x00;
+    uint32_t fsize = strlen(kConfigIni);
+    b[28] = (uint8_t)fsize;
+    b[29] = (uint8_t)(fsize >> 8);
+    b[30] = (uint8_t)(fsize >> 16);
+    b[31] = (uint8_t)(fsize >> 24);
+  } else if (lba == 34) {
+    memcpy(b, kConfigIni, strlen(kConfigIni));
+  }
+  return (int32_t)bufsize;
 }
 
-static void fat(uint8_t *b, uint32_t i) {
-    memset(b, 0, SECTOR_SIZE);
-    if (i == 0u) {
-        b[0] = 0xF8u;
-        b[1] = 0xFFu;
-        b[2] = 0xFFu;
-        b[3] = 0xFFu;
-        b[4] = 0xFFu;
-        b[5] = 0xFFu;
-    }
+static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize) {
+  (void)lba;
+  (void)buffer;
+  return (int32_t)bufsize;
 }
 
-static void root(uint8_t *b, uint32_t i) {
-    memset(b, 0, SECTOR_SIZE);
-    if (i != 0u) {
-        return;
-    }
+static void msc_flush_cb(void) {}
 
-    fill11(b + 0, "COBALTXCFG ");
-    b[11] = 0x08u;
-
-    uint8_t *f = b + 32;
-    fill11(f + 0, "CONFIG  INI");
-    f[11] = 0x20u;
-    w16(f + 26, 0u);
-    w32(f + 28, 0u);
+void vdrive_init(void) {
+  usb_msc.setID("Synarix", "Cobalt-X Config", "1.0");
+  usb_msc.setCapacity(SECTOR_COUNT, SECTOR_SIZE);
+  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);
+  usb_msc.begin();
 }
-
-static void data(uint8_t *b, uint32_t) {
-    memset(b, 0, SECTOR_SIZE);
-}
-
-static void sector(uint8_t *b, uint32_t lba) {
-    if (lba == 0u) {
-        boot(b);
-        return;
-    }
-
-    if (lba < (1u + FAT_SECTORS)) {
-        fat(b, lba - 1u);
-        return;
-    }
-
-    if (lba < (1u + (FAT_SECTORS * 2u))) {
-        fat(b, lba - (1u + FAT_SECTORS));
-        return;
-    }
-
-    if (lba < DATA_START) {
-        root(b, lba - ROOT_START);
-        return;
-    }
-
-    if (lba < TOTAL_SECTORS) {
-        data(b, lba - DATA_START);
-        return;
-    }
-
-    memset(b, 0, SECTOR_SIZE);
-}
-
-extern "C" void vdrive_init(void) {
-    RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
-    (void)RCC->AHB2ENR;
-
-    GPIOB->MODER &= ~(3u << (6u * 2u));
-    GPIOB->PUPDR = (GPIOB->PUPDR & ~(3u << (6u * 2u))) | (1u << (6u * 2u));
-
-    g_enabled = ((GPIOB->IDR & (1u << 6u)) == 0u) ? 1u : 0u;
-}
-
-extern "C" uint8_t vdrive_enabled(void) {
-    return g_enabled;
-}
-
-extern "C" int8_t STORAGE_Init_FS(uint8_t lun) {
-    (void)lun;
-    return g_enabled ? 0 : -1;
-}
-
-extern "C" int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_size) {
-    (void)lun;
-    if (!g_enabled) {
-        return -1;
-    }
-    *block_num = TOTAL_SECTORS;
-    *block_size = SECTOR_SIZE;
-    return 0;
-}
-
-extern "C" int8_t STORAGE_IsReady_FS(uint8_t lun) {
-    (void)lun;
-    return g_enabled ? 0 : -1;
-}
-
-extern "C" int8_t STORAGE_IsWriteProtected_FS(uint8_t lun) {
-    (void)lun;
-    return 1;
-}
-
-extern "C" int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len) {
-    (void)lun;
-    if (!g_enabled) {
-        return -1;
-    }
-
-    if (blk_len == 0u) {
-        return 0;
-    }
-
-    if ((blk_addr >= TOTAL_SECTORS) || ((blk_addr + (uint32_t)blk_len) > TOTAL_SECTORS)) {
-        return -1;
-    }
-
-    for (uint16_t i = 0; i < blk_len; ++i) {
-        sector(buf + ((uint32_t)i * SECTOR_SIZE), blk_addr + (uint32_t)i);
-    }
-
-    return 0;
-}
-
-extern "C" int8_t STORAGE_Write_FS(uint8_t, uint8_t *, uint32_t, uint16_t) {
-    return -1;
-}
-
-extern "C" int8_t STORAGE_GetMaxLun_FS(void) {
-    return 0;
-}
-
-extern "C" int8_t MSC_Init(uint8_t lun) {
-    return STORAGE_Init_FS(lun);
-}
-
-extern "C" int8_t MSC_GetCapacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size) {
-    return STORAGE_GetCapacity_FS(lun, block_num, block_size);
-}
-
-extern "C" int8_t MSC_IsReady(uint8_t lun) {
-    return STORAGE_IsReady_FS(lun);
-}
-
-extern "C" int8_t MSC_IsWriteProtected(uint8_t lun) {
-    return STORAGE_IsWriteProtected_FS(lun);
-}
-
-extern "C" int8_t MSC_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len) {
-    return STORAGE_Read_FS(lun, buf, blk_addr, blk_len);
-}
-
-extern "C" int8_t MSC_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len) {
-    return STORAGE_Write_FS(lun, buf, blk_addr, blk_len);
-}
-
-extern "C" int8_t MSC_GetMaxLun(void) {
-    return STORAGE_GetMaxLun_FS();
-}
-
-USBD_StorageTypeDef USBD_Storage_Interface_fops_FS = {
-    STORAGE_Init_FS,
-    STORAGE_GetCapacity_FS,
-    STORAGE_IsReady_FS,
-    STORAGE_IsWriteProtected_FS,
-    STORAGE_Read_FS,
-    STORAGE_Write_FS,
-    STORAGE_GetMaxLun_FS,
-    (uint8_t *)kInquiryData
-};
-
 
 ================================================
  PATH: vDrive-Firmware/build_opt.h
 ================================================
 -DUSBCON
--DUSBD_USE_MSC
 -DHAL_PCD_MODULE_ENABLED
--DVECT_TAB_OFFSET=0x14000
--include usbd_conf_custom.h
-
-
-================================================
- PATH: vDrive-Firmware/usbd_conf_custom.h
-================================================
-#pragma once
-
-#undef USB_VID
-#define USB_VID 0x1209
-
-#undef USB_PID
-#define USB_PID 0xC0CB
-
-#undef USB_MANUFACTURER_STRING
-#define USB_MANUFACTURER_STRING "Synarix"
-
-#undef USB_PRODUCT_STRING
-#define USB_PRODUCT_STRING "Cobalt-X Config"
-
+-DSTM32G4xx
+-DUSE_HAL_DRIVER
+-DVECT_TAB_OFFSET=0x0
 
 ================================================
  PATH: vDrive-Firmware/vDrive-Firmware.ino
 ================================================
+// BOOTLOADER_FLAG: To flash via custom bootloader instead of Arduino IDE,
+// change -DVECT_TAB_OFFSET=0x0 to -DVECT_TAB_OFFSET=0x14000 in build_opt.h
+
 #include <Arduino.h>
+#include "system.h"
 #include "vdrive.h"
 
 void setup(void) {
-    vdrive_init();
-    USBDevice.attach();
+  SystemClock_Config();
+  vdrive_init();
 }
 
-void loop(void) {
-}
-
+void loop(void) {}
 
 ================================================
- PATH: Boot-Select/Boot-Select.ino
+ PATH: HyprBoot/Boot-Select.ino
 ================================================
 #include <Arduino.h>
 #include <stm32g4xx.h>
@@ -743,7 +553,7 @@ extern "C" {
  PATH: HID-Firmware/build_opt.h
 ================================================
 -DUSBCON
--DUSBD_USE_HID
+-DUSBD_USE_HID_COMPOSITE
 -DHAL_PCD_MODULE_ENABLED
 -DVECT_TAB_OFFSET=0x0
 -include usbd_conf_custom.h
@@ -751,7 +561,23 @@ extern "C" {
 ================================================
  PATH: HID-Firmware/spi.h
 ================================================
+#ifndef SPI_H
+#define SPI_H
 
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void spi_init(void);
+  void sensor_read_motion(int8_t *dx, int8_t *dy);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 
 ================================================
  PATH: HID-Firmware/pipeline.cpp
@@ -765,14 +591,15 @@ extern "C" {
 #define TICKS_PER_FRAME 32u
 
 static volatile uint8_t current_btn_state = 0;
-static volatile uint16_t locks[4] = { 0, 0, 0, 0 };
+static volatile uint16_t locks[4] = { 0 };
 static volatile int32_t wheel_accum = 0;
 static volatile uint32_t last_enc_count = 0;
 static volatile uint8_t frame_tick = 0;
-static volatile pipeline_report_t ready_report = { 0, 0 };
+
+static volatile pipeline_report_t ready_report = { 0 };
 
 static inline void debounce_step(uint8_t idx, uint8_t pin) {
-  if (locks[idx] > 0) {
+  if (locks[idx]) {
     locks[idx]--;
     return;
   }
@@ -788,8 +615,10 @@ static inline void debounce_step(uint8_t idx, uint8_t pin) {
 void pipeline_init(void) {
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN;
   (void)RCC->AHB2ENR;
+
   GPIOB->MODER &= ~(0xFFu << 6u);
   GPIOB->PUPDR = (GPIOB->PUPDR & ~(0xFFu << 6u)) | (0x55u << 6u);
+
   GPIOA->MODER = (GPIOA->MODER & ~0x0Fu) | 0x0Au;
   GPIOA->AFR[0] = (GPIOA->AFR[0] & ~0xFFu) | 0x11u;
   GPIOA->PUPDR = (GPIOA->PUPDR & ~0x0Fu) | 0x05u;
@@ -797,10 +626,10 @@ void pipeline_init(void) {
 
   RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
   (void)RCC->APB1ENR1;
+
   TIM2->CR1 = 0;
   TIM2->SMCR = 3;
   TIM2->CCMR1 = 0xF1F1;
-  TIM2->CCER = 0;
   TIM2->ARR = 0xFFFFFFFF;
   TIM2->CNT = 0;
   TIM2->CR1 = 1;
@@ -823,10 +652,14 @@ void pipeline_tick(void) {
 
   if (++frame_tick >= TICKS_PER_FRAME) {
     frame_tick = 0;
+
     int32_t steps = wheel_accum / ENCODER_DIVIDER;
     wheel_accum %= ENCODER_DIVIDER;
-    ready_report.wheel = (steps > 127) ? 127 : (steps < -127) ? -127
-                                                              : (int8_t)steps;
+
+    if (steps > 127) steps = 127;
+    if (steps < -127) steps = -127;
+
+    ready_report.wheel = (int8_t)steps;
   }
 }
 
@@ -877,8 +710,9 @@ void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
     if ((buttons & 0x04) != (last_sent & 0x04)) (buttons & 0x04) ? Mouse.press(MOUSE_MIDDLE) : Mouse.release(MOUSE_MIDDLE);
     last_sent = buttons;
   }
-  if (wheel != 0) {
-    Mouse.move(0, 0, (int)wheel);
+
+  if (wheel) {
+    Mouse.move(0, 0, wheel);
   }
 }
 
@@ -984,7 +818,59 @@ extern "C" {
 ================================================
  PATH: HID-Firmware/spi.cpp
 ================================================
+#include "spi.h"
+#include <stm32g4xx.h>
 
+#define CS_LOW() (GPIOA->BSRR = (uint32_t)(1u << (4u + 16u)))
+#define CS_HIGH() (GPIOA->BSRR = (1u << 4u))
+
+static uint8_t spi_transfer(uint8_t d) {
+  while (!(SPI1->SR & SPI_SR_TXE))
+    ;
+  *((__IO uint8_t *)&SPI1->DR) = d;
+  while (!(SPI1->SR & SPI_SR_RXNE))
+    ;
+  return *((__IO uint8_t *)&SPI1->DR);
+}
+
+static void delay_short(void) {
+  for (volatile int i = 0; i < 200; i++) __NOP();
+}
+
+void spi_init(void) {
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
+  (void)RCC->AHB2ENR;
+
+  GPIOA->MODER = (GPIOA->MODER & ~(3u << (4u * 2u))) | (1u << (4u * 2u));
+  GPIOA->MODER |= (2u << (5u * 2u)) | (2u << (6u * 2u)) | (2u << (7u * 2u));
+  GPIOA->AFR[0] |= (5u << (5u * 4u)) | (5u << (6u * 4u)) | (5u << (7u * 4u));
+  GPIOA->OSPEEDR |= (3u << (4u * 2u)) | (3u << (5u * 2u)) | (3u << (6u * 2u)) | (3u << (7u * 2u));
+
+  CS_HIGH();
+
+  SPI1->CR1 = 0;
+  SPI1->CR1 |= SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI;
+  SPI1->CR1 |= SPI_CR1_CPOL | SPI_CR1_CPHA;
+  SPI1->CR1 |= SPI_CR1_BR_2 | SPI_CR1_BR_1;
+  SPI1->CR1 |= SPI_CR1_SPE;
+}
+
+void sensor_read_motion(int8_t *dx, int8_t *dy) {
+  uint8_t xl, yl;
+
+  CS_LOW();
+  spi_transfer(0x02);
+  delay_short();
+  xl = spi_transfer(0);
+  spi_transfer(0);
+  yl = spi_transfer(0);
+  spi_transfer(0);
+  CS_HIGH();
+
+  *dx = (int8_t)xl;
+  *dy = (int8_t)yl;
+}
 
 ================================================
  PATH: HID-Firmware/usb_hid.h

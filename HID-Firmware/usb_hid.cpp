@@ -15,7 +15,8 @@ void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
     if ((buttons & 0x04) != (last_sent & 0x04)) (buttons & 0x04) ? Mouse.press(MOUSE_MIDDLE) : Mouse.release(MOUSE_MIDDLE);
     last_sent = buttons;
   }
-  if (wheel != 0) {
-    Mouse.move(0, 0, (int)wheel);
+
+  if (wheel) {
+    Mouse.move(0, 0, wheel);
   }
 }

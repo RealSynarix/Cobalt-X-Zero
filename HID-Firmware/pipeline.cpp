@@ -7,14 +7,15 @@
 #define TICKS_PER_FRAME 32u
 
 static volatile uint8_t current_btn_state = 0;
-static volatile uint16_t locks[4] = { 0, 0, 0, 0 };
+static volatile uint16_t locks[4] = { 0 };
 static volatile int32_t wheel_accum = 0;
 static volatile uint32_t last_enc_count = 0;
 static volatile uint8_t frame_tick = 0;
-static volatile pipeline_report_t ready_report = { 0, 0 };
+
+static volatile pipeline_report_t ready_report = { 0 };
 
 static inline void debounce_step(uint8_t idx, uint8_t pin) {
-  if (locks[idx] > 0) {
+  if (locks[idx]) {
     locks[idx]--;
     return;
   }
@@ -30,8 +31,10 @@ static inline void debounce_step(uint8_t idx, uint8_t pin) {
 void pipeline_init(void) {
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN;
   (void)RCC->AHB2ENR;
+
   GPIOB->MODER &= ~(0xFFu << 6u);
   GPIOB->PUPDR = (GPIOB->PUPDR & ~(0xFFu << 6u)) | (0x55u << 6u);
+
   GPIOA->MODER = (GPIOA->MODER & ~0x0Fu) | 0x0Au;
   GPIOA->AFR[0] = (GPIOA->AFR[0] & ~0xFFu) | 0x11u;
   GPIOA->PUPDR = (GPIOA->PUPDR & ~0x0Fu) | 0x05u;
@@ -39,10 +42,10 @@ void pipeline_init(void) {
 
   RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
   (void)RCC->APB1ENR1;
+
   TIM2->CR1 = 0;
   TIM2->SMCR = 3;
   TIM2->CCMR1 = 0xF1F1;
-  TIM2->CCER = 0;
   TIM2->ARR = 0xFFFFFFFF;
   TIM2->CNT = 0;
   TIM2->CR1 = 1;
@@ -65,10 +68,14 @@ void pipeline_tick(void) {
 
   if (++frame_tick >= TICKS_PER_FRAME) {
     frame_tick = 0;
+
     int32_t steps = wheel_accum / ENCODER_DIVIDER;
     wheel_accum %= ENCODER_DIVIDER;
-    ready_report.wheel = (steps > 127) ? 127 : (steps < -127) ? -127
-                                                              : (int8_t)steps;
+
+    if (steps > 127) steps = 127;
+    if (steps < -127) steps = -127;
+
+    ready_report.wheel = (int8_t)steps;
   }
 }
 
