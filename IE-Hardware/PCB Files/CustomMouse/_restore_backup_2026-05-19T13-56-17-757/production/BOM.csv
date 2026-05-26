@@ -1,0 +1,12 @@
+Designator,Comment,Footprint,LCSC Part #
+"C1,C9",1uF,Capacitor_SMD:C_0603_1608Metric,
+C2,4.7uF,Capacitor_SMD:C_0603_1608Metric,
+"C3,C4,C7,C8,C11,C15,C16,C17",100nF,Capacitor_SMD:C_0603_1608Metric,
+C5,10uF,Capacitor_SMD:C_0603_1608Metric,
+"R1,R5,R6",10k,Resistor_SMD:R_0603_1608Metric,
+"R2,R3",5.1k,Resistor_SMD:R_0603_1608Metric,
+R4,39,Resistor_SMD:R_0603_1608Metric,
+REGULATOR1,AP2112K-3.3,Package_TO_SOT_SMD:SOT-23-5,
+"TP1,TP2,TP3",TestPoint,TestPoint:TestPoint_Pad_D1.0mm,
+U1,STM32G431KBT6,Package_QFP:LQFP-32_7x7mm_P0.8mm,
+USB1,USB_C_Receptacle_USB2.0_14P,Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12,

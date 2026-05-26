@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# any folder/file appened with 'IE-' means index exclude, and will not be listed at all in the index
+# this script must be run in a subfolder to the root called 'Tools' and not anywhere else
+
 set -e
 
 readonly TARGET_DIR="./Information"
@@ -9,7 +12,6 @@ readonly SCRIPT_NAME=$(basename "$0")
 notify() {
     local title="$1"
     local message="$2"
-
     if command -v notify-send &> /dev/null; then
         notify-send "$title" "$message"
     elif command -v osascript &> /dev/null; then
@@ -21,7 +23,12 @@ notify() {
 }
 
 main() {
-    trap 'notify "Archive Failed" "The script encountered an error. Check terminal output."; exit 1' ERR
+    trap 'notify "Archive Failed" "The script encountered an error."; exit 1' ERR
+
+    if [[ "$(basename "$PWD")" != "Tools" ]]; then
+        printf "[ERROR] Script must be run from the 'Tools' directory.\n" >&2
+        exit 1
+    fi
 
     cd ..
 
@@ -34,15 +41,14 @@ main() {
 
     {
         printf "PROJECT ARCHIVE: %s\n" "$(date)"
-        printf "Configuration: Full structure included; .md/.png contents omitted.\n"
         printf -- "------------------------------------------------\n\n"
         printf "I. DIRECTORY STRUCTURE\n"
-        tree -I '.*'
+        tree -I '.*|node_modules|*IE-*'
         printf "\n--\n\n"
         printf "II. FILE CONTENTS\n\n"
     } > "$OUTPUT_FILE"
 
-    find . -not -path '*/.*' -type f | while read -r file; do
+    find . -path '*/node_modules' -prune -o -path '*/.*' -prune -o -name '*IE-*' -prune -o -type f -print | while read -r file; do
         local normalized_file=$(echo "$file" | sed 's|^\./||')
 
         if [[ "$normalized_file" == *"$SCRIPT_NAME" || "$file" == "$OUTPUT_FILE" ]]; then
@@ -68,7 +74,7 @@ main() {
         printf "\n\n" >> "$OUTPUT_FILE"
     done
 
-    notify "Archive Complete" "Process finished successfully. Check /Information/codebase.txt"
+    notify "Archive Complete" "Process finished successfully."
     printf "[SUCCESS] Archive generated at %s\n" "$OUTPUT_FILE"
 }
 

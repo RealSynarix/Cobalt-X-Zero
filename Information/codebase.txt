@@ -1,119 +1,68 @@
-PROJECT ARCHIVE: Thu Apr 16 04:12:43 PM AEST 2026
-Configuration: Full structure included; .md/.png contents omitted.
+PROJECT ARCHIVE: Wed May 27 09:17:18 AM AEST 2026
 ------------------------------------------------
 
 I. DIRECTORY STRUCTURE
 .
-├── HID-Firmware
-│   ├── build_opt.h
-│   ├── HID-Firmware.ino
-│   ├── led.cpp
-│   ├── led.h
-│   ├── macro.cpp
-│   ├── macro.h
-│   ├── pipeline.cpp
-│   ├── pipeline.h
-│   ├── spi.cpp
-│   ├── spi.h
-│   ├── system.cpp
-│   ├── system.h
-│   ├── timer.cpp
-│   ├── timer.h
-│   ├── usb.cpp
-│   ├── usbd_conf_custom.h
-│   ├── usb.h
-│   ├── usb_hid.cpp
-│   └── usb_hid.h
-├── HyprBoot
-│   └── Boot-Select.ino
+├── Firmware
+│   ├── HID-Firmware
+│   │   ├── build_opt.h
+│   │   ├── HID-Firmware.ino
+│   │   ├── led.cpp
+│   │   ├── led.h
+│   │   ├── macro.cpp
+│   │   ├── macro.h
+│   │   ├── pipeline.cpp
+│   │   ├── pipeline.h
+│   │   ├── SENSOR-Test
+│   │   │   ├── build_opt.h
+│   │   │   ├── SENSOR-Test.ino
+│   │   │   ├── system.cpp
+│   │   │   ├── system.h
+│   │   │   ├── usbd_conf_custom.h
+│   │   │   ├── usb_hid.cpp
+│   │   │   └── usb_hid.h
+│   │   ├── system.cpp
+│   │   ├── system.h
+│   │   ├── timer.cpp
+│   │   ├── timer.h
+│   │   ├── usb.cpp
+│   │   ├── usbd_conf_custom.h
+│   │   ├── usb.h
+│   │   ├── usb_hid.cpp
+│   │   └── usb_hid.h
+│   ├── HyprBoot
+│   │   └── HyprBoot.ino
+│   └── vDrive-Firmware
+│       ├── build_opt.h
+│       ├── system.cpp
+│       ├── system.h
+│       ├── vdrive.cpp
+│       ├── vDrive-Firmware.ino
+│       └── vdrive.h
 ├── Information
 │   ├── Cobalt-X Zero: Firmware Datasheet.md
 │   ├── codebase.txt
-│   └── Schematic.png
-├── Tools
-│   ├── build_all.sh
-│   ├── codebase_indexer.sh
-│   └── flash_all.sh
-└── vDrive-Firmware
-    ├── build_opt.h
-    ├── system.cpp
-    ├── system.h
-    ├── vdrive.cpp
-    ├── vDrive-Firmware.ino
-    └── vdrive.h
+│   ├── Images
+│   │   ├── Proto1.png
+│   │   ├── Proto2.png
+│   │   ├── Proto2-Schematic.png
+│   │   ├── Proto2-SCRAPPED.png
+│   │   └── Sensor-Ref-Schematic.png
+│   ├── PMW3360-DataSheet.pdf
+│   ├── Proto-v3-edits-TODO.txt
+│   ├── STM32G431BTK6-DataSheet.pdf
+│   └── YICTE-Report-Template.docx
+└── Tools
+    └── codebase_indexer.sh
 
-6 directories, 32 files
+9 directories, 43 files
 
 --
 
 II. FILE CONTENTS
 
 ================================================
- PATH: Tools/build_all.sh
-================================================
-#!/usr/bin/env bash
-set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FQBN="${FQBN:-STMicroelectronics:stm32:GenG4}"
-CLI="${ARDUINO_CLI:-arduino-cli}"
-OUT="$ROOT/build"
-HID_SRC="$ROOT/HID-Firmware"
-BOOT_SRC="$ROOT/Boot-Select"
-VDRIVE_SRC="$ROOT/vDrive-Firmware"
-HID_OUT="$OUT/hid"
-BOOT_OUT="$OUT/boot"
-VDRIVE_OUT="$OUT/vdrive"
-FLASH_BIN="$OUT/cobalt_x_zero_combined.bin"
-rm -rf "$OUT"
-mkdir -p "$HID_OUT" "$BOOT_OUT" "$VDRIVE_OUT"
-"$CLI" compile -b "$FQBN" --output-dir "$BOOT_OUT" "$BOOT_SRC"
-"$CLI" compile -b "$FQBN" --output-dir "$HID_OUT" "$HID_SRC"
-"$CLI" compile -b "$FQBN" --output-dir "$VDRIVE_OUT" "$VDRIVE_SRC"
-HID_BIN="$(find "$HID_OUT" -maxdepth 1 -name '*.bin' | head -n1)"
-BOOT_BIN="$(find "$BOOT_OUT" -maxdepth 1 -name '*.bin' | head -n1)"
-VDRIVE_BIN="$(find "$VDRIVE_OUT" -maxdepth 1 -name '*.bin' | head -n1)"
-python3 - "$FLASH_BIN" "$BOOT_BIN" "$HID_BIN" "$VDRIVE_BIN" <<'PY'
-import sys
-from pathlib import Path
-out_path = Path(sys.argv[1])
-boot = Path(sys.argv[2]).read_bytes()
-hid = Path(sys.argv[3]).read_bytes()
-vdrive = Path(sys.argv[4]).read_bytes()
-FLASH_SIZE = 128 * 1024
-BASE_ADDR = 0x08000000
-BOOT_ADDR   = 0x08000000
-HID_ADDR    = 0x08004000
-VDRIVE_ADDR = 0x08014000
-image = bytearray([0xFF]) * FLASH_SIZE
-def place(addr, data):
-    offset = addr - BASE_ADDR
-    if offset < 0 or offset + len(data) > FLASH_SIZE:
-        sys.exit(1)
-    image[offset:offset + len(data)] = data
-place(BOOT_ADDR, boot)
-place(HID_ADDR, hid)
-place(VDRIVE_ADDR, vdrive)
-out_path.write_bytes(image)
-PY
-
-
-================================================
- PATH: Tools/flash_all.sh
-================================================
-#!/usr/bin/env bash
-set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CLI="${STM32_PROGRAMMER_CLI:-STM32_Programmer_CLI}"
-PORT="${PORT:-usb1}"
-BIN="$ROOT/build/cobalt_x_zero_combined.bin"
-if [[ ! -f "$BIN" ]]; then
-    exit 1
-fi
-"$CLI" -c port="$PORT" -w "$BIN" 0x08000000 -v -rst
-
-
-================================================
- PATH: vDrive-Firmware/system.cpp
+ PATH: Firmware/vDrive-Firmware/system.cpp
 ================================================
 #include "system.h"
 #include <stm32g4xx_hal.h>
@@ -158,7 +107,7 @@ void SystemClock_Config(void) {
 }
 
 ================================================
- PATH: vDrive-Firmware/vdrive.h
+ PATH: Firmware/vDrive-Firmware/vdrive.h
 ================================================
 #ifndef VDRIVE_H
 #define VDRIVE_H
@@ -166,7 +115,7 @@ void vdrive_init(void);
 #endif
 
 ================================================
- PATH: vDrive-Firmware/system.h
+ PATH: Firmware/vDrive-Firmware/system.h
 ================================================
 #ifndef SYSTEM_H
 #define SYSTEM_H
@@ -180,7 +129,7 @@ extern "C" {
 #endif
 
 ================================================
- PATH: vDrive-Firmware/vdrive.cpp
+ PATH: Firmware/vDrive-Firmware/vdrive.cpp
 ================================================
 #include "vdrive.h"
 #include <USBMSC.h>
@@ -283,7 +232,7 @@ void vdrive_init(void) {
 }
 
 ================================================
- PATH: vDrive-Firmware/build_opt.h
+ PATH: Firmware/vDrive-Firmware/build_opt.h
 ================================================
 -DUSBCON
 -DHAL_PCD_MODULE_ENABLED
@@ -292,7 +241,7 @@ void vdrive_init(void) {
 -DVECT_TAB_OFFSET=0x0
 
 ================================================
- PATH: vDrive-Firmware/vDrive-Firmware.ino
+ PATH: Firmware/vDrive-Firmware/vDrive-Firmware.ino
 ================================================
 // BOOTLOADER_FLAG: To flash via custom bootloader instead of Arduino IDE,
 // change -DVECT_TAB_OFFSET=0x0 to -DVECT_TAB_OFFSET=0x14000 in build_opt.h
@@ -309,7 +258,7 @@ void setup(void) {
 void loop(void) {}
 
 ================================================
- PATH: HyprBoot/Boot-Select.ino
+ PATH: Firmware/HyprBoot/HyprBoot.ino
 ================================================
 #include <Arduino.h>
 #include <stm32g4xx.h>
@@ -359,24 +308,12 @@ void loop(void) {
 
 
 ================================================
- PATH: Information/Schematic.png
-================================================
-[Content intentionally omitted for documentation/image format]
-
-
-================================================
- PATH: Information/Cobalt-X Zero: Firmware Datasheet.md
-================================================
-[Content intentionally omitted for documentation/image format]
-
-
-================================================
- PATH: HID-Firmware/led.cpp
+ PATH: Firmware/HID-Firmware/led.cpp
 ================================================
 
 
 ================================================
- PATH: HID-Firmware/timer.cpp
+ PATH: Firmware/HID-Firmware/timer.cpp
 ================================================
 #include "timer.h"
 #include "pipeline.h"
@@ -403,7 +340,7 @@ void timer_resync(void) {
 }
 
 ================================================
- PATH: HID-Firmware/HID-Firmware.ino
+ PATH: Firmware/HID-Firmware/HID-Firmware.ino
 ================================================
 // BOOTLOADER_FLAG: Change 0x0 to 0x4000 when using a bootloader in build_opt.h
 
@@ -432,7 +369,7 @@ void loop(void) {
 }
 
 ================================================
- PATH: HID-Firmware/system.cpp
+ PATH: Firmware/HID-Firmware/system.cpp
 ================================================
 #include "system.h"
 #include <stm32g4xx_hal.h>
@@ -482,12 +419,12 @@ void SystemClock_Config(void) {
 }
 
 ================================================
- PATH: HID-Firmware/led.h
+ PATH: Firmware/HID-Firmware/led.h
 ================================================
 
 
 ================================================
- PATH: HID-Firmware/usb.cpp
+ PATH: Firmware/HID-Firmware/usb.cpp
 ================================================
 #include "usb.h"
 #include "timer.h"
@@ -511,7 +448,7 @@ uint8_t usb_sof_detected(void) {
 }
 
 ================================================
- PATH: HID-Firmware/system.h
+ PATH: Firmware/HID-Firmware/system.h
 ================================================
 #ifndef SYSTEM_H
 #define SYSTEM_H
@@ -529,7 +466,7 @@ extern "C" {
 #endif
 
 ================================================
- PATH: HID-Firmware/usb.h
+ PATH: Firmware/HID-Firmware/usb.h
 ================================================
 #ifndef USB_H
 #define USB_H
@@ -550,7 +487,7 @@ extern "C" {
 #endif
 
 ================================================
- PATH: HID-Firmware/build_opt.h
+ PATH: Firmware/HID-Firmware/build_opt.h
 ================================================
 -DUSBCON
 -DUSBD_USE_HID_COMPOSITE
@@ -559,28 +496,7 @@ extern "C" {
 -include usbd_conf_custom.h
 
 ================================================
- PATH: HID-Firmware/spi.h
-================================================
-#ifndef SPI_H
-#define SPI_H
-
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  void spi_init(void);
-  void sensor_read_motion(int8_t *dx, int8_t *dy);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-
-================================================
- PATH: HID-Firmware/pipeline.cpp
+ PATH: Firmware/HID-Firmware/pipeline.cpp
 ================================================
 #include "pipeline.h"
 #include "macro.h"
@@ -671,7 +587,7 @@ uint8_t pipeline_get_ready_report(pipeline_report_t *out) {
 }
 
 ================================================
- PATH: HID-Firmware/usbd_conf_custom.h
+ PATH: Firmware/HID-Firmware/usbd_conf_custom.h
 ================================================
 #pragma once
 
@@ -691,7 +607,7 @@ uint8_t pipeline_get_ready_report(pipeline_report_t *out) {
 #define HID_FS_BINTERVAL 0x01
 
 ================================================
- PATH: HID-Firmware/usb_hid.cpp
+ PATH: Firmware/HID-Firmware/usb_hid.cpp
 ================================================
 #include "usb_hid.h"
 #include <Arduino.h>
@@ -717,7 +633,7 @@ void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
 }
 
 ================================================
- PATH: HID-Firmware/macro.h
+ PATH: Firmware/HID-Firmware/macro.h
 ================================================
 #ifndef MACRO_H
 #define MACRO_H
@@ -730,7 +646,7 @@ uint8_t macro_update(uint8_t buttons, int32_t *delta);
 #endif
 
 ================================================
- PATH: HID-Firmware/macro.cpp
+ PATH: Firmware/HID-Firmware/macro.cpp
 ================================================
 #include "macro.h"
 
@@ -797,7 +713,190 @@ uint8_t macro_update(uint8_t buttons, int32_t *delta) {
 }
 
 ================================================
- PATH: HID-Firmware/timer.h
+ PATH: Firmware/HID-Firmware/SENSOR-Test/system.cpp
+================================================
+#include "system.h"
+#include <stm32g4xx_hal.h>
+
+void SystemClock_Config(void) {
+  __HAL_RCC_PWR_CLK_ENABLE();
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+
+  RCC_OscInitTypeDef osc = { 0 };
+  osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
+  osc.HSIState = RCC_HSI_ON;
+  osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  osc.HSI48State = RCC_HSI48_ON;
+  osc.PLL.PLLState = RCC_PLL_ON;
+  osc.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  osc.PLL.PLLM = RCC_PLLM_DIV4;
+  osc.PLL.PLLN = 85;
+  osc.PLL.PLLP = RCC_PLLP_DIV2;
+  osc.PLL.PLLQ = RCC_PLLQ_DIV2;
+  osc.PLL.PLLR = RCC_PLLR_DIV2;
+  HAL_RCC_OscConfig(&osc);
+
+  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET)
+    ;
+
+  RCC_ClkInitTypeDef clk = { 0 };
+  clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  clk.APB1CLKDivider = RCC_HCLK_DIV1;
+  clk.APB2CLKDivider = RCC_HCLK_DIV1;
+  HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
+
+  RCC_PeriphCLKInitTypeDef periph = { 0 };
+  periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+  HAL_RCCEx_PeriphCLKConfig(&periph);
+
+  __HAL_RCC_CRS_CLK_ENABLE();
+  RCC_CRSInitTypeDef crs = { 0 };
+  crs.Prescaler = RCC_CRS_SYNC_DIV1;
+  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
+  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
+  crs.ErrorLimitValue = 34;
+  crs.HSI48CalibrationValue = 32;
+  HAL_RCCEx_CRSConfig(&crs);
+}
+
+
+================================================
+ PATH: Firmware/HID-Firmware/SENSOR-Test/system.h
+================================================
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void SystemClock_Config(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+
+================================================
+ PATH: Firmware/HID-Firmware/SENSOR-Test/build_opt.h
+================================================
+-DUSBCON
+-DUSBD_USE_HID_COMPOSITE
+-DHAL_PCD_MODULE_ENABLED
+-DVECT_TAB_OFFSET=0x0
+-include usbd_conf_custom.h
+
+
+================================================
+ PATH: Firmware/HID-Firmware/SENSOR-Test/usbd_conf_custom.h
+================================================
+#pragma once
+
+#undef USB_VID
+#define USB_VID 0x1209
+
+#undef USB_PID
+#define USB_PID 0xC0BA
+
+#undef USB_MANUFACTURER_STRING
+#define USB_MANUFACTURER_STRING "I'm a"
+
+#undef USB_PRODUCT_STRING
+#define USB_PRODUCT_STRING "Test Drive"
+
+#undef HID_FS_BINTERVAL
+#define HID_FS_BINTERVAL 0x01
+
+
+================================================
+ PATH: Firmware/HID-Firmware/SENSOR-Test/usb_hid.cpp
+================================================
+#include "usb_hid.h"
+#include <Arduino.h>
+#include <Mouse.h>
+
+void usb_hid_init(void) {
+  Mouse.begin();
+}
+
+================================================
+ PATH: Firmware/HID-Firmware/SENSOR-Test/SENSOR-Test.ino
+================================================
+#include <Arduino.h>
+#include <SPI.h>
+#include <PMW3360.h>
+#include <Mouse.h>
+#include "system.h"
+#include "usb_hid.h"
+
+#define SENSOR_CS PA4
+#define SENSOR_CPI 800
+
+PMW3360 sensor;
+static bool sensor_ok = false;
+
+static inline int8_t clamp8(int16_t v) {
+  if (v > 127) return 127;
+  if (v < -127) return -127;
+  return (int8_t)v;
+}
+
+void setup() {
+  SystemClock_Config();
+  usb_hid_init();
+  delay(2000);
+  pinMode(SENSOR_CS, OUTPUT);
+  digitalWrite(SENSOR_CS, HIGH);
+  SPI.setMOSI(PA7);
+  SPI.setMISO(PA6);
+  SPI.setSCLK(PA5);
+  for (int i = 0; i < 10 && !sensor_ok; i++) {
+    delay(200);
+    sensor_ok = sensor.begin(SENSOR_CS);
+  }
+  if (sensor_ok) {
+    sensor.setCPI(SENSOR_CPI);
+    Mouse.move(20, 0, 0);
+  } else {
+    Mouse.move(0, 20, 0);
+  }
+}
+
+void loop() {
+  if (!sensor_ok) return;
+  PMW3360_DATA d = sensor.readBurst();
+  int8_t mx = clamp8(d.dx);
+  int8_t my = clamp8(d.dy);
+  if (mx != 0 || my != 0) {
+    Mouse.move(mx, my, 0);
+  }
+}
+
+================================================
+ PATH: Firmware/HID-Firmware/SENSOR-Test/usb_hid.h
+================================================
+#ifndef USB_HID_H
+#define USB_HID_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void usb_hid_init(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+================================================
+ PATH: Firmware/HID-Firmware/timer.h
 ================================================
 #ifndef TIMER_H
 #define TIMER_H
@@ -816,64 +915,7 @@ extern "C" {
 #endif
 
 ================================================
- PATH: HID-Firmware/spi.cpp
-================================================
-#include "spi.h"
-#include <stm32g4xx.h>
-
-#define CS_LOW() (GPIOA->BSRR = (uint32_t)(1u << (4u + 16u)))
-#define CS_HIGH() (GPIOA->BSRR = (1u << 4u))
-
-static uint8_t spi_transfer(uint8_t d) {
-  while (!(SPI1->SR & SPI_SR_TXE))
-    ;
-  *((__IO uint8_t *)&SPI1->DR) = d;
-  while (!(SPI1->SR & SPI_SR_RXNE))
-    ;
-  return *((__IO uint8_t *)&SPI1->DR);
-}
-
-static void delay_short(void) {
-  for (volatile int i = 0; i < 200; i++) __NOP();
-}
-
-void spi_init(void) {
-  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
-  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
-  (void)RCC->AHB2ENR;
-
-  GPIOA->MODER = (GPIOA->MODER & ~(3u << (4u * 2u))) | (1u << (4u * 2u));
-  GPIOA->MODER |= (2u << (5u * 2u)) | (2u << (6u * 2u)) | (2u << (7u * 2u));
-  GPIOA->AFR[0] |= (5u << (5u * 4u)) | (5u << (6u * 4u)) | (5u << (7u * 4u));
-  GPIOA->OSPEEDR |= (3u << (4u * 2u)) | (3u << (5u * 2u)) | (3u << (6u * 2u)) | (3u << (7u * 2u));
-
-  CS_HIGH();
-
-  SPI1->CR1 = 0;
-  SPI1->CR1 |= SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI;
-  SPI1->CR1 |= SPI_CR1_CPOL | SPI_CR1_CPHA;
-  SPI1->CR1 |= SPI_CR1_BR_2 | SPI_CR1_BR_1;
-  SPI1->CR1 |= SPI_CR1_SPE;
-}
-
-void sensor_read_motion(int8_t *dx, int8_t *dy) {
-  uint8_t xl, yl;
-
-  CS_LOW();
-  spi_transfer(0x02);
-  delay_short();
-  xl = spi_transfer(0);
-  spi_transfer(0);
-  yl = spi_transfer(0);
-  spi_transfer(0);
-  CS_HIGH();
-
-  *dx = (int8_t)xl;
-  *dy = (int8_t)yl;
-}
-
-================================================
- PATH: HID-Firmware/usb_hid.h
+ PATH: Firmware/HID-Firmware/usb_hid.h
 ================================================
 #ifndef USB_HID_H
 #define USB_HID_H
@@ -894,7 +936,7 @@ extern "C" {
 #endif
 
 ================================================
- PATH: HID-Firmware/pipeline.h
+ PATH: Firmware/HID-Firmware/pipeline.h
 ================================================
 #ifndef PIPELINE_H
 #define PIPELINE_H
@@ -919,4 +961,73 @@ extern "C" {
 #endif
 
 #endif
+
+================================================
+ PATH: Information/Images/Proto2.png
+================================================
+[Content intentionally omitted for documentation/image format]
+
+
+================================================
+ PATH: Information/Images/Sensor-Ref-Schematic.png
+================================================
+[Content intentionally omitted for documentation/image format]
+
+
+================================================
+ PATH: Information/Images/Proto2-SCRAPPED.png
+================================================
+[Content intentionally omitted for documentation/image format]
+
+
+================================================
+ PATH: Information/Images/Proto1.png
+================================================
+[Content intentionally omitted for documentation/image format]
+
+
+================================================
+ PATH: Information/Images/Proto2-Schematic.png
+================================================
+[Content intentionally omitted for documentation/image format]
+
+
+================================================
+ PATH: Information/YICTE-Report-Template.docx
+================================================
+[Binary or non-standard text format skipped]
+
+
+================================================
+ PATH: Information/PMW3360-DataSheet.pdf
+================================================
+[Binary or non-standard text format skipped]
+
+
+================================================
+ PATH: Information/Proto-v3-edits-TODO.txt
+================================================
+What to modify from proto-2:
+
+Provide Voltage (correct at that), to the VDD pin, and ensure all pins are set up correctly.
+Provide another regulator to step down 3.3v to 1.8v for the sensor module.
+Ensure PCB is sound regarding pin layout, form factor, and reduce costs where nessisary.
+Ensure proper and well thought out pin mapping and placement for the LEDs
+Ponder best position for MAC button.
+Consilidate firmware and polish, ensuring minimal latency and true results.
+Create a bootloader (called HyprBoot), which should be a state machine and pick the correct firmware to boot (HID or MSC), on power of the device, toggled via the MAC button at power on.
+Ensure space for scroll wheel support, in order to mitigate the need for a mid shell
+
+
+================================================
+ PATH: Information/STM32G431BTK6-DataSheet.pdf
+================================================
+[Binary or non-standard text format skipped]
+
+
+================================================
+ PATH: Information/Cobalt-X Zero: Firmware Datasheet.md
+================================================
+[Content intentionally omitted for documentation/image format]
+
 
