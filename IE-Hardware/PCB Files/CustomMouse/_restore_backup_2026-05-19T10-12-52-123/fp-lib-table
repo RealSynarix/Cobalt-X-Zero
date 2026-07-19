@@ -1,5 +1,0 @@
-(fp_lib_table
-  (version 7)
-  (lib (name "Sensor_Mouse")(type "KiCad")(uri "/home/alex/Programming/CAD/PCBs/ImportedComponents/PMW3360DM-T2QU/Sensor_Mouse.pretty")(options "")(descr ""))
-  (lib (name "Scroll")(type "KiCad")(uri "/home/alex/Programming/CAD/PCBs/ImportedComponents/EC10E1220501/Scroll.pretty")(options "")(descr ""))
-)

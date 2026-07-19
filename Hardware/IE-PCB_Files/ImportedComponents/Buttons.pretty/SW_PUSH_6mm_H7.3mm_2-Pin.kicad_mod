@@ -1,0 +1,240 @@
+(footprint "SW_PUSH_6mm_H7.3mm_2-Pin"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "tactile push button, 6x6mm e.g. PHAP33xx series, height=7.3mm")
+	(tags "tact sw push 6mm")
+	(property "Reference" "MACRO1"
+		(at 7.9 2.25 90)
+		(layer "F.SilkS")
+		(uuid "ad7a6a41-a2d2-413c-a460-0cd31f28ea07")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "SW_Push"
+		(at 3.25 6.7 0)
+		(layer "F.Fab")
+		(uuid "1bb79b53-6f0c-42ba-bd1f-965af648eebc")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "360a6e17-9ed6-44cb-b8a0-b23f39129a97")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Push button switch, generic, two pins"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "e84978e8-fe83-44a2-8ab9-dec6b7b89da7")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(sheetname "/")
+	(sheetfile "CustomMouse.kicad_sch")
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -0.25 1.5)
+		(end -0.25 3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c650e839-7a25-48bb-8d3d-2cb39b208d48")
+	)
+	(fp_line
+		(start 1 5.5)
+		(end 5.5 5.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c6f649ab-80bc-4d09-af24-8e6a459b2b87")
+	)
+	(fp_line
+		(start 5.5 -1)
+		(end 1 -1)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "96dfb98f-8f46-406c-870f-e1ca602eff14")
+	)
+	(fp_line
+		(start 6.75 3)
+		(end 6.75 1.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d24978d0-a4d8-4220-9f52-7a5db2d875b8")
+	)
+	(fp_line
+		(start -0.5 -1.25)
+		(end 7 -1.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "82ee01a5-fd46-4f62-99f3-8e62a02bbd26")
+	)
+	(fp_line
+		(start -0.5 5.75)
+		(end -0.5 -1.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "885dce59-2455-4d6a-a7ac-fc4c72b2e560")
+	)
+	(fp_line
+		(start 7 -1.25)
+		(end 7 5.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "8e4f3e4f-01d4-4bb4-a65a-5d1a90afdd12")
+	)
+	(fp_line
+		(start 7 5.75)
+		(end -0.5 5.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "10120de7-d45d-451f-b70a-c6fc551d44a2")
+	)
+	(fp_line
+		(start 0.25 -0.75)
+		(end 3.25 -0.75)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "abc1c5e8-86d9-495f-933f-c1f6c918f6fd")
+	)
+	(fp_line
+		(start 0.25 5.25)
+		(end 0.25 -0.75)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "2dfc71c8-b3e0-4b84-8a8f-0ab7b9a24a4f")
+	)
+	(fp_line
+		(start 3.25 -0.75)
+		(end 6.25 -0.75)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "df96b9dd-8964-4d98-b630-4485c9996d23")
+	)
+	(fp_line
+		(start 6.25 -0.75)
+		(end 6.25 5.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "9529bb22-5b32-4666-8bde-f8b86c76bc1c")
+	)
+	(fp_line
+		(start 6.25 5.25)
+		(end 0.25 5.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "94d36aba-2f18-47ef-8a55-fd721b1cea6c")
+	)
+	(fp_circle
+		(center 3.25 2.25)
+		(end 1.25 2.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "c91f36f7-07cb-4ccb-80d8-9de4e6577b6f")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 3.25 2.25 0)
+		(layer "F.Fab")
+		(uuid "8d54e4bb-2059-4e19-9a3a-19fec46cb83a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole circle
+		(at 3.25 0 90)
+		(size 2 2)
+		(drill 1.1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "2d436b52-68e8-4a4a-9cf6-0fc126867529")
+	)
+	(pad "2" thru_hole circle
+		(at 3.25 4.5 90)
+		(size 2 2)
+		(drill 1.1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "bfa66f6c-3793-4752-b2a0-9942f79f1069")
+	)
+	(embedded_fonts no)
+	(model "${KICAD9_3DMODEL_DIR}/Button_Switch_THT.3dshapes/SW_PUSH_6mm_H7.3mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
