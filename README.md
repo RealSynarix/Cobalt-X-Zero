@@ -1,3 +1,10 @@
+## TODO (RM only):
+-- Correct Title Part
+-- Correct Specs
+-- Correct Dates/Information (of such)
+-- Clean up wording
+-- Correct info (regarding firmware and stuff)
+
 # Cobalt-X Zero — v1.0.0
 ### The World's First Ultralight - 'ENTER WEIGHT HERE'g, Fully Open-Source, Zero-Software (Includes a VFS for config), Bare-Metal Firmware Gaming Mouse (built by a kid).
 

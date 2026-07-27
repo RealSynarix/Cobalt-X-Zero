@@ -1,5 +1,0 @@
-build/
-*.bin
-*.elf
-*.hex
-.arduino15/
