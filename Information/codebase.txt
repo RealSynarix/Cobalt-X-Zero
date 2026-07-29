@@ -1,53 +1,44 @@
-PROJECT ARCHIVE: Mon Jul 27 05:01:22 PM AEST 2026
+PROJECT ARCHIVE: Wed Jul 29 12:30:59 PM AEST 2026
 ------------------------------------------------
 
 I. DIRECTORY STRUCTURE
 .
 ├── Firmware
 │   ├── build_opt.h
-│   ├── Enumeration-Module
 │   ├── Firmware.ino
-│   ├── HyprX-Module
-│   ├── led.cpp
-│   ├── led.h
-│   ├── LEDs-Module
-│   ├── macro.cpp
-│   ├── macro.h
-│   ├── MSC-Module
-│   │   ├── build_opt.h
-│   │   ├── Config-Module
-│   │   │   └── config.ini
-│   │   ├── system.cpp
-│   │   ├── system.h
-│   │   ├── vdrive.cpp
-│   │   ├── vDrive-Firmware.ino
-│   │   ├── vdrive.h
-│   │   └── vDrive-Module
-│   ├── pipeline.cpp
-│   ├── pipeline.h
-│   ├── Sensor-Module
-│   │   ├── build_opt.h
-│   │   ├── SENSOR-Test.ino
-│   │   ├── system.cpp
-│   │   ├── system.h
-│   │   ├── usbd_conf_custom.h
-│   │   ├── usb_hid.cpp
-│   │   └── usb_hid.h
-│   ├── system.cpp
-│   ├── system.h
-│   ├── TactileIO-Module
-│   ├── timer.cpp
-│   ├── timer.h
-│   ├── usb.cpp
-│   ├── usbd_conf_custom.h
-│   ├── usb.h
-│   ├── usb_hid.cpp
-│   └── usb_hid.h
+│   ├── src
+│   │   ├── Core-Module
+│   │   │   ├── system.cpp
+│   │   │   ├── system.h
+│   │   │   ├── timer.cpp
+│   │   │   └── timer.h
+│   │   ├── Enumeration-Module
+│   │   │   ├── usb.cpp
+│   │   │   ├── usb.h
+│   │   │   ├── usb_hid.cpp
+│   │   │   └── usb_hid.h
+│   │   ├── HyprX-Module
+│   │   │   ├── macro.cpp
+│   │   │   └── macro.h
+│   │   ├── LEDs-Module
+│   │   │   ├── leds.cpp
+│   │   │   └── leds.h
+│   │   ├── MSC-Module
+│   │   │   ├── Config-Module
+│   │   │   │   └── config.ini
+│   │   │   ├── vdrive.cpp
+│   │   │   └── vdrive.h
+│   │   ├── Sensor-Module
+│   │   └── TactileIO-Module
+│   │       ├── pipeline.cpp
+│   │       └── pipeline.h
+│   └── usbd_conf_custom.h
 ├── Hardware
 │   ├── 3D Models
 │   │   ├── Bottom-Shell.stl
 │   │   ├── Scroll-Wheel.stl
-│   │   └── Side-Buttons.stl
+│   │   ├── Side-Buttons.stl
+│   │   └── Top-Shell.stl
 │   └── Fabrication Files
 │       ├── Cobalt-X_Zero.kicad_pcb
 │       ├── Cobalt-X_Zero.kicad_sch
@@ -63,7 +54,7 @@ I. DIRECTORY STRUCTURE
 └── Tools
     └── codebase_indexer.sh
 
-15 directories, 45 files
+16 directories, 35 files
 
 --
 
@@ -749,314 +740,19 @@ Public License instead of this License.  But first, please read
 
 
 ================================================
- PATH: Firmware/led.cpp
-================================================
-
-
-================================================
- PATH: Firmware/timer.cpp
-================================================
-#include "timer.h"
-#include "pipeline.h"
-#include <HardwareTimer.h>
-
-static HardwareTimer *htim = nullptr;
-
-static void timer_callback(void) {
-  pipeline_tick();
-}
-
-void timer_init(void) {
-  htim = new HardwareTimer(TIM3);
-  htim->setOverflow(32000, HERTZ_FORMAT);
-  htim->attachInterrupt(timer_callback);
-  htim->setInterruptPriority(0, 0);
-  htim->resume();
-}
-
-void timer_resync(void) {
-  if (htim) {
-    TIM3->CNT = 0;
-  }
-}
-
-================================================
- PATH: Firmware/Sensor-Module/system.cpp
-================================================
-#include "system.h"
-#include <stm32g4xx_hal.h>
-
-void SystemClock_Config(void) {
-  __HAL_RCC_PWR_CLK_ENABLE();
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
-
-  RCC_OscInitTypeDef osc = { 0 };
-  osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
-  osc.HSIState = RCC_HSI_ON;
-  osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  osc.HSI48State = RCC_HSI48_ON;
-  osc.PLL.PLLState = RCC_PLL_ON;
-  osc.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  osc.PLL.PLLM = RCC_PLLM_DIV4;
-  osc.PLL.PLLN = 85;
-  osc.PLL.PLLP = RCC_PLLP_DIV2;
-  osc.PLL.PLLQ = RCC_PLLQ_DIV2;
-  osc.PLL.PLLR = RCC_PLLR_DIV2;
-  HAL_RCC_OscConfig(&osc);
-
-  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET)
-    ;
-
-  RCC_ClkInitTypeDef clk = { 0 };
-  clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-  clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  clk.APB1CLKDivider = RCC_HCLK_DIV1;
-  clk.APB2CLKDivider = RCC_HCLK_DIV1;
-  HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
-
-  RCC_PeriphCLKInitTypeDef periph = { 0 };
-  periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
-  periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
-  HAL_RCCEx_PeriphCLKConfig(&periph);
-
-  __HAL_RCC_CRS_CLK_ENABLE();
-  RCC_CRSInitTypeDef crs = { 0 };
-  crs.Prescaler = RCC_CRS_SYNC_DIV1;
-  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
-  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
-  crs.ErrorLimitValue = 34;
-  crs.HSI48CalibrationValue = 32;
-  HAL_RCCEx_CRSConfig(&crs);
-}
-
-
-================================================
- PATH: Firmware/Sensor-Module/system.h
-================================================
-#ifndef SYSTEM_H
-#define SYSTEM_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  void SystemClock_Config(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-
-
-================================================
- PATH: Firmware/Sensor-Module/build_opt.h
-================================================
--DUSBCON
--DUSBD_USE_HID_COMPOSITE
--DHAL_PCD_MODULE_ENABLED
--DVECT_TAB_OFFSET=0x0
--include usbd_conf_custom.h
-
-
-================================================
- PATH: Firmware/Sensor-Module/usbd_conf_custom.h
-================================================
-#pragma once
-
-#undef USB_VID
-#define USB_VID 0x1209
-
-#undef USB_PID
-#define USB_PID 0xC0BA
-
-#undef USB_MANUFACTURER_STRING
-#define USB_MANUFACTURER_STRING "I'm a"
-
-#undef USB_PRODUCT_STRING
-#define USB_PRODUCT_STRING "Test Drive"
-
-#undef HID_FS_BINTERVAL
-#define HID_FS_BINTERVAL 0x01
-
-
-================================================
- PATH: Firmware/Sensor-Module/usb_hid.cpp
-================================================
-#include "usb_hid.h"
-#include <Arduino.h>
-#include <Mouse.h>
-
-void usb_hid_init(void) {
-  Mouse.begin();
-}
-
-================================================
- PATH: Firmware/Sensor-Module/SENSOR-Test.ino
-================================================
-#include <Arduino.h>
-#include <SPI.h>
-#include <PMW3360.h>
-#include <Mouse.h>
-#include "system.h"
-#include "usb_hid.h"
-
-#define SENSOR_CS PA4
-#define SENSOR_CPI 800
-
-PMW3360 sensor;
-static bool sensor_ok = false;
-
-static inline int8_t clamp8(int16_t v) {
-  if (v > 127) return 127;
-  if (v < -127) return -127;
-  return (int8_t)v;
-}
-
-void setup() {
-  SystemClock_Config();
-  usb_hid_init();
-  delay(2000);
-  pinMode(SENSOR_CS, OUTPUT);
-  digitalWrite(SENSOR_CS, HIGH);
-  SPI.setMOSI(PA7);
-  SPI.setMISO(PA6);
-  SPI.setSCLK(PA5);
-  for (int i = 0; i < 10 && !sensor_ok; i++) {
-    delay(200);
-    sensor_ok = sensor.begin(SENSOR_CS);
-  }
-  if (sensor_ok) {
-    sensor.setCPI(SENSOR_CPI);
-    Mouse.move(20, 0, 0);
-  } else {
-    Mouse.move(0, 20, 0);
-  }
-}
-
-void loop() {
-  if (!sensor_ok) return;
-  PMW3360_DATA d = sensor.readBurst();
-  int8_t mx = clamp8(d.dx);
-  int8_t my = clamp8(d.dy);
-  if (mx != 0 || my != 0) {
-    Mouse.move(mx, my, 0);
-  }
-}
-
-================================================
- PATH: Firmware/Sensor-Module/usb_hid.h
-================================================
-#ifndef USB_HID_H
-#define USB_HID_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  void usb_hid_init(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-
-================================================
- PATH: Firmware/system.cpp
-================================================
-#include "system.h"
-#include <stm32g4xx_hal.h>
-
-void SystemClock_Config(void) {
-  __HAL_RCC_PWR_CLK_ENABLE();
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
-
-  RCC_OscInitTypeDef osc = { 0 };
-  osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
-  osc.HSIState = RCC_HSI_ON;
-  osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  osc.HSI48State = RCC_HSI48_ON;
-  osc.PLL.PLLState = RCC_PLL_ON;
-  osc.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  osc.PLL.PLLM = RCC_PLLM_DIV4;
-  osc.PLL.PLLN = 85;
-  osc.PLL.PLLP = RCC_PLLP_DIV2;
-  osc.PLL.PLLQ = RCC_PLLQ_DIV2;
-  osc.PLL.PLLR = RCC_PLLR_DIV2;
-  HAL_RCC_OscConfig(&osc);
-
-  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET)
-    ;
-
-  RCC_ClkInitTypeDef clk = { 0 };
-  clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-  clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  clk.APB1CLKDivider = RCC_HCLK_DIV1;
-  clk.APB2CLKDivider = RCC_HCLK_DIV1;
-  HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
-
-  RCC_PeriphCLKInitTypeDef periph = { 0 };
-  periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
-  periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
-  HAL_RCCEx_PeriphCLKConfig(&periph);
-
-  __HAL_RCC_CRS_CLK_ENABLE();
-  RCC_CRSInitTypeDef crs = { 0 };
-  crs.Prescaler = RCC_CRS_SYNC_DIV1;
-  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
-  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
-  crs.ErrorLimitValue = 34;
-  crs.HSI48CalibrationValue = 32;
-  HAL_RCCEx_CRSConfig(&crs);
-}
-
-================================================
- PATH: Firmware/led.h
-================================================
-
-
-================================================
- PATH: Firmware/usb.cpp
-================================================
-#include "usb.h"
-#include "timer.h"
-#include <stm32g4xx_hal.h>
-
-static uint16_t last_frame = 0xFFFF;
-
-void usb_init(void) {
-  USB->CNTR |= USB_CNTR_SOFM;
-  USB->ISTR = (uint16_t)~USB_ISTR_SOF;
-}
-
-uint8_t usb_sof_detected(void) {
-  uint16_t current_frame = (uint16_t)(USB->FNR & USB_FNR_FN);
-  if (current_frame != last_frame) {
-    last_frame = current_frame;
-    timer_resync();
-    return 1;
-  }
-  return 0;
-}
-
-================================================
  PATH: Firmware/Firmware.ino
 ================================================
-// BOOTLOADER_FLAG: Change 0x0 to 0x4000 when using a bootloader in build_opt.h
-
-#include "system.h"
-#include "usb.h"
-#include "timer.h"
-#include "pipeline.h"
-#include "usb_hid.h"
+#include "src/Core-Module/system.h"
+#include "src/Core-Module/timer.h"
+#include "src/Enumeration-Module/usb.h"
+#include "src/Enumeration-Module/usb_hid.h"
+#include "src/TactileIO-Module/pipeline.h"
+#include "src/LEDs-Module/leds.h"
 
 void setup(void) {
   SystemClock_Config();
-  delay(10);
   pipeline_init();
+  leds_init();
   usb_hid_init();
   usb_init();
   timer_init();
@@ -1064,51 +760,14 @@ void setup(void) {
 
 void loop(void) {
   if (usb_sof_detected()) {
-    pipeline_report_t report;
-    if (pipeline_get_ready_report(&report)) {
-      usb_hid_send_report(report.buttons, report.wheel);
+    pipeline_report_t r;
+    if (pipeline_get_ready_report(&r)) {
+      usb_hid_send_report(r.buttons, r.wheel);
     }
   }
+  leds_tick();
 }
 
-================================================
- PATH: Firmware/system.h
-================================================
-#ifndef SYSTEM_H
-#define SYSTEM_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  void SystemClock_Config(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-
-================================================
- PATH: Firmware/usb.h
-================================================
-#ifndef USB_H
-#define USB_H
-
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  void usb_init(void);
-  uint8_t usb_sof_detected(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 
 ================================================
  PATH: Firmware/build_opt.h
@@ -1119,61 +778,330 @@ extern "C" {
 -DVECT_TAB_OFFSET=0x0
 -include usbd_conf_custom.h
 
+
 ================================================
- PATH: Firmware/pipeline.cpp
+ PATH: Firmware/src/LEDs-Module/leds.cpp
+================================================
+#include "leds.h"
+#include "../HyprX-Module/macro.h"
+#include <Arduino.h>
+#include <stm32g4xx.h>
+#include <math.h>
+
+#define PI 3.1415926f
+#define CYCLE_MS 10000u
+
+static inline void set_rgb(uint8_t r,uint8_t g,uint8_t b){
+  __disable_irq();
+  TIM1->CCR1 = r;
+  TIM1->CCR2 = g;
+  TIM1->CCR3 = b;
+  __enable_irq();
+}
+
+void leds_init(void){
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+  __DSB();
+  GPIOA->MODER &= ~((3u<<16)|(3u<<18)|(3u<<20));
+  GPIOA->MODER |= (2u<<16)|(2u<<18)|(2u<<20);
+  GPIOA->OTYPER &= ~((1u<<8)|(1u<<9)|(1u<<10));
+  GPIOA->OSPEEDR |= (3u<<16)|(3u<<18)|(3u<<20);
+  GPIOA->PUPDR &= ~((3u<<16)|(3u<<18)|(3u<<20));
+  GPIOA->AFR[1] &= ~((0xFu<<0)|(0xFu<<4)|(0xFu<<8));
+  GPIOA->AFR[1] |= (1u<<0)|(1u<<4)|(1u<<8);
+  TIM1->CR1 = 0;
+  TIM1->PSC = 331;
+  TIM1->ARR = 255;
+  TIM1->CCMR1 = (6u<<4)|(1u<<3)|(6u<<12)|(1u<<11);
+  TIM1->CCMR2 = (6u<<4)|(1u<<3);
+  TIM1->CCER = TIM_CCER_CC1E|TIM_CCER_CC2E|TIM_CCER_CC3E;
+  TIM1->BDTR = TIM_BDTR_MOE;
+  TIM1->CCR1 = 0;
+  TIM1->CCR2 = 0;
+  TIM1->CCR3 = 0;
+  TIM1->CR1 = TIM_CR1_ARPE|TIM_CR1_CEN;
+}
+
+void leds_tick(void){
+  uint32_t t = millis() % CYCLE_MS;
+  uint8_t Ra,Ga,Ba,Rb,Gb,Bb;
+  if(macro_is_hyprx_active()){
+    Ra = 255; Ga = 0; Ba = 0;
+    Rb = 90; Gb = 0; Bb = 0;
+  }else{
+    Ra = 0; Ga = 0; Ba = 255;
+    Rb = 0; Gb = 0; Bb = 90;
+  }
+  float r,g,b;
+  if(t < 3000u){
+    r = Ra; g = Ga; b = Ba;
+  }else if(t < 4000u){
+    float p = (float)(t-3000u)/1000.0f;
+    float e = 0.5f - 0.5f * cosf(p*PI);
+    r = Ra*(1.0f-e) + Rb*e;
+    g = Ga*(1.0f-e) + Gb*e;
+    b = Ba*(1.0f-e) + Bb*e;
+  }else if(t < 8000u){
+    r = Rb; g = Gb; b = Bb;
+  }else if(t < 9000u){
+    float p = (float)(t-8000u)/1000.0f;
+    float e = 0.5f - 0.5f * cosf(p*PI);
+    r = Rb*(1.0f-e) + Ra*e;
+    g = Gb*(1.0f-e) + Ga*e;
+    b = Bb*(1.0f-e) + Ba*e;
+  }else{
+    r = Ra; g = Ga; b = Ba;
+  }
+  if(r<2) r=0;
+  if(g<2) g=0;
+  if(b<2) b=0;
+  if(r>253) r=255;
+  if(g>253) g=255;
+  if(b>253) b=255;
+  set_rgb((uint8_t)r,(uint8_t)g,(uint8_t)b);
+}
+
+
+================================================
+ PATH: Firmware/src/LEDs-Module/leds.h
+================================================
+#ifndef LEDS_H
+#define LEDS_H
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C"{
+#endif
+void leds_init(void);
+void leds_tick(void);
+#ifdef __cplusplus
+}
+#endif
+#endif
+
+
+================================================
+ PATH: Firmware/src/HyprX-Module/macro.h
+================================================
+#ifndef MACRO_H
+#define MACRO_H
+#include <stdint.h>
+void macro_init(void);
+uint8_t macro_update(uint8_t buttons, int32_t *delta);
+uint8_t macro_frame_tick(void);
+uint8_t macro_is_hyprx_active(void);
+#endif
+
+
+================================================
+ PATH: Firmware/src/HyprX-Module/macro.cpp
+================================================
+#include "macro.h"
+
+#define HYPRX_DIV 2
+
+static uint8_t hyprx_mode = 0;
+static uint8_t active_target = 0;
+static int32_t pending = 0;
+static int32_t acc = 0;
+static uint8_t press_phase = 0;
+static uint8_t last_mac = 0;
+static uint8_t last_mmb = 0;
+
+void macro_init(void) {
+  hyprx_mode = 0;
+  active_target = 0;
+  pending = 0;
+  acc = 0;
+  press_phase = 0;
+  last_mac = 0;
+  last_mmb = 0;
+}
+
+uint8_t macro_update(uint8_t buttons, int32_t *delta) {
+  uint8_t mac = (buttons >> 3) & 1u;
+  if (mac &&!last_mac) {
+    hyprx_mode ^= 1u;
+    if (hyprx_mode) {
+      active_target = 0;
+      pending = 0;
+      acc = 0;
+      press_phase = 0;
+    } else {
+      pending = 0;
+      acc = 0;
+      press_phase = 0;
+    }
+  }
+  last_mac = mac;
+  uint8_t mmb = (buttons >> 2) & 1u;
+  if (hyprx_mode && mmb &&!last_mmb) {
+    active_target ^= 1u;
+  }
+  last_mmb = mmb;
+  if (hyprx_mode) {
+    if (*delta!= 0) {
+      acc += *delta;
+      int32_t s = acc / HYPRX_DIV;
+      acc %= HYPRX_DIV;
+      if (s!= 0) {
+        int32_t ad = s < 0? -s : s;
+        if (pending < 512) pending += ad;
+      }
+      *delta = 0;
+    }
+  }
+  uint8_t base = buttons;
+  if (hyprx_mode) base &= (uint8_t)~0x04u;
+  return base & 0x07u;
+}
+
+uint8_t macro_frame_tick(void) {
+  if (!hyprx_mode || pending <= 0) {
+    press_phase = 0;
+    return 0;
+  }
+  if (press_phase == 0) {
+    press_phase = 1;
+    return active_target == 0? 0x01u : 0x02u;
+  } else {
+    press_phase = 0;
+    pending--;
+    return 0;
+  }
+}
+
+uint8_t macro_is_hyprx_active(void) {
+  return hyprx_mode;
+}
+
+
+================================================
+ PATH: Firmware/src/Enumeration-Module/usb.cpp
+================================================
+#include "usb.h"
+#include "../Core-Module/timer.h"
+#include <stm32g4xx_hal.h>
+
+static uint16_t last_frame = 0xFFFF;
+
+void usb_init(void) {
+  last_frame = 0xFFFF;
+}
+
+uint8_t usb_sof_detected(void) {
+  uint16_t current = (uint16_t)(USB->FNR & USB_FNR_FN);
+  if (current!= last_frame) {
+    last_frame = current;
+    timer_resync();
+    return 1;
+  }
+  return 0;
+}
+
+
+================================================
+ PATH: Firmware/src/Enumeration-Module/usb.h
+================================================
+#ifndef USB_H
+#define USB_H
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+void usb_init(void);
+uint8_t usb_sof_detected(void);
+#ifdef __cplusplus
+}
+#endif
+#endif
+
+
+================================================
+ PATH: Firmware/src/Enumeration-Module/usb_hid.cpp
+================================================
+#include "usb_hid.h"
+#include <Arduino.h>
+#define private public
+#include <Mouse.h>
+#undef private
+
+void usb_hid_init(void) {
+  Mouse.begin();
+}
+
+void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
+  Mouse._buttons = buttons & 0x07;
+  Mouse.move(0, 0, wheel);
+}
+
+
+================================================
+ PATH: Firmware/src/Enumeration-Module/usb_hid.h
+================================================
+#ifndef USB_HID_H
+#define USB_HID_H
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+void usb_hid_init(void);
+void usb_hid_send_report(uint8_t buttons, int8_t wheel);
+#ifdef __cplusplus
+}
+#endif
+#endif
+
+
+================================================
+ PATH: Firmware/src/TactileIO-Module/pipeline.cpp
 ================================================
 #include "pipeline.h"
-#include "macro.h"
+#include "../HyprX-Module/macro.h"
 #include <stm32g4xx.h>
 
 #define DEBOUNCE_LOCKOUT 160u
 #define ENCODER_DIVIDER 2
 #define TICKS_PER_FRAME 32u
 
-static volatile uint8_t current_btn_state = 0;
-static volatile uint16_t locks[4] = { 0 };
-static volatile int32_t wheel_accum = 0;
-static volatile uint32_t last_enc_count = 0;
-static volatile uint8_t frame_tick = 0;
-
-static volatile pipeline_report_t ready_report = { 0 };
+static uint8_t current_btn_state = 0;
+static uint16_t locks[4] = {0};
+static int32_t wheel_accum = 0;
+static uint32_t last_enc_count = 0;
+static uint8_t frame_tick = 0;
+static volatile pipeline_report_t ready_report = {0, 0};
 
 static inline void debounce_step(uint8_t idx, uint8_t pin) {
-  if (locks[idx]) {
+  if (locks[idx]!= 0) {
     locks[idx]--;
     return;
   }
-  uint8_t phys = !((GPIOB->IDR >> pin) & 1u);
+  uint8_t phys = ((GPIOB->IDR >> pin) & 1u) == 0u? 1u : 0u;
   uint8_t log = (current_btn_state >> idx) & 1u;
-  if (phys != log) {
+  if (phys!= log) {
     if (phys) current_btn_state |= (1u << idx);
-    else current_btn_state &= ~(1u << idx);
+    else current_btn_state &= (uint8_t)~(1u << idx);
     locks[idx] = DEBOUNCE_LOCKOUT;
   }
 }
 
 void pipeline_init(void) {
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN;
-  (void)RCC->AHB2ENR;
-
+  __DSB();
   GPIOB->MODER &= ~(0xFFu << 6u);
   GPIOB->PUPDR = (GPIOB->PUPDR & ~(0xFFu << 6u)) | (0x55u << 6u);
-
   GPIOA->MODER = (GPIOA->MODER & ~0x0Fu) | 0x0Au;
   GPIOA->AFR[0] = (GPIOA->AFR[0] & ~0xFFu) | 0x11u;
   GPIOA->PUPDR = (GPIOA->PUPDR & ~0x0Fu) | 0x05u;
   GPIOA->OSPEEDR = (GPIOA->OSPEEDR & ~0x0Fu) | 0x0Fu;
-
   RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
-  (void)RCC->APB1ENR1;
-
-  TIM2->CR1 = 0;
-  TIM2->SMCR = 3;
-  TIM2->CCMR1 = 0xF1F1;
-  TIM2->ARR = 0xFFFFFFFF;
-  TIM2->CNT = 0;
-  TIM2->CR1 = 1;
-
+  __DSB();
+  TIM2->CR1 = 0u;
+  TIM2->SMCR = 3u;
+  TIM2->CCMR1 = 0xF1F1u;
+  TIM2->ARR = 0xFFFFFFFFu;
+  TIM2->CNT = 0u;
+  TIM2->CR1 = TIM_CR1_CEN;
   macro_init();
 }
 
@@ -1182,82 +1110,109 @@ void pipeline_tick(void) {
   debounce_step(1, 4);
   debounce_step(2, 5);
   debounce_step(3, 6);
-
   uint32_t enc = TIM2->CNT;
   int32_t delta = (int32_t)(enc - last_enc_count);
   last_enc_count = enc;
-
-  ready_report.buttons = macro_update(current_btn_state, &delta);
+  uint8_t base = macro_update(current_btn_state, &delta);
   wheel_accum += delta;
-
-  if (++frame_tick >= TICKS_PER_FRAME) {
+  frame_tick++;
+  if (frame_tick >= TICKS_PER_FRAME) {
     frame_tick = 0;
-
-    int32_t steps = wheel_accum / ENCODER_DIVIDER;
-    wheel_accum %= ENCODER_DIVIDER;
-
+    int32_t steps = wheel_accum / (int32_t)ENCODER_DIVIDER;
+    wheel_accum %= (int32_t)ENCODER_DIVIDER;
     if (steps > 127) steps = 127;
     if (steps < -127) steps = -127;
-
+    uint8_t synth = macro_frame_tick();
+    ready_report.buttons = (base | synth) & 0x07u;
     ready_report.wheel = (int8_t)steps;
   }
 }
 
 uint8_t pipeline_get_ready_report(pipeline_report_t *out) {
+  __disable_irq();
   out->buttons = ready_report.buttons;
   out->wheel = ready_report.wheel;
   ready_report.wheel = 0;
+  __enable_irq();
   return 1;
 }
 
-================================================
- PATH: Firmware/usbd_conf_custom.h
-================================================
-#pragma once
-
-#undef USB_VID
-#define USB_VID 0x1209
-
-#undef USB_PID
-#define USB_PID 0xC0BA
-
-#undef USB_MANUFACTURER_STRING
-#define USB_MANUFACTURER_STRING "Synarix"
-
-#undef USB_PRODUCT_STRING
-#define USB_PRODUCT_STRING "Cobalt-X Zero"
-
-#undef HID_FS_BINTERVAL
-#define HID_FS_BINTERVAL 0x01
 
 ================================================
- PATH: Firmware/usb_hid.cpp
+ PATH: Firmware/src/TactileIO-Module/pipeline.h
 ================================================
-#include "usb_hid.h"
-#include <Arduino.h>
-#include <Mouse.h>
+#ifndef PIPELINE_H
+#define PIPELINE_H
+#include <stdint.h>
 
-static uint8_t last_sent = 0;
+typedef struct {
+  uint8_t buttons;
+  int8_t wheel;
+} pipeline_report_t;
 
-void usb_hid_init(void) {
-  Mouse.begin();
+#ifdef __cplusplus
+extern "C" {
+#endif
+void pipeline_init(void);
+void pipeline_tick(void);
+uint8_t pipeline_get_ready_report(pipeline_report_t *out);
+#ifdef __cplusplus
+}
+#endif
+#endif
+
+
+================================================
+ PATH: Firmware/src/MSC-Module/vdrive.h
+================================================
+#ifndef VDRIVE_H
+#define VDRIVE_H
+#endif
+
+
+================================================
+ PATH: Firmware/src/MSC-Module/Config-Module/config.ini
+================================================
+
+
+================================================
+ PATH: Firmware/src/MSC-Module/vdrive.cpp
+================================================
+#include "vdrive.h"
+
+
+================================================
+ PATH: Firmware/src/Core-Module/timer.cpp
+================================================
+#include "timer.h"
+#include "../TactileIO-Module/pipeline.h"
+#include <HardwareTimer.h>
+#include <stm32g4xx.h>
+
+static HardwareTimer timer3(TIM3);
+static HardwareTimer *htim = nullptr;
+
+static void timer_callback(void) {
+  pipeline_tick();
 }
 
-void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
-  if (buttons != last_sent) {
-    if ((buttons & 0x01) != (last_sent & 0x01)) (buttons & 0x01) ? Mouse.press(MOUSE_LEFT) : Mouse.release(MOUSE_LEFT);
-    if ((buttons & 0x02) != (last_sent & 0x02)) (buttons & 0x02) ? Mouse.press(MOUSE_RIGHT) : Mouse.release(MOUSE_RIGHT);
-    if ((buttons & 0x04) != (last_sent & 0x04)) (buttons & 0x04) ? Mouse.press(MOUSE_MIDDLE) : Mouse.release(MOUSE_MIDDLE);
-    last_sent = buttons;
-  }
+void timer_init(void) {
+  htim = &timer3;
+  htim->setOverflow(32000, HERTZ_FORMAT);
+  htim->attachInterrupt(timer_callback);
+  htim->setInterruptPriority(1, 0);
+  htim->resume();
+}
 
-  if (wheel) {
-    Mouse.move(0, 0, wheel);
+void timer_resync(void) {
+  if (htim!= nullptr) {
+    TIM3->CNT = 0;
   }
 }
 
+
 ================================================
- PATH: Firmware/MSC-Module/system.cpp
+ PATH: Firmware/src/Core-Module/system.cpp
 ================================================
 #include "system.h"
 #include <stm32g4xx_hal.h>
@@ -1265,7 +1220,7 @@ void usb_hid_send_report(uint8_t buttons, int8_t wheel) {
 void SystemClock_Config(void) {
   __HAL_RCC_PWR_CLK_ENABLE();
   HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
-  RCC_OscInitTypeDef osc = { 0 };
+  RCC_OscInitTypeDef osc = {0};
   osc.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
   osc.HSIState = RCC_HSI_ON;
   osc.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -1278,333 +1233,82 @@ void SystemClock_Config(void) {
   osc.PLL.PLLQ = RCC_PLLQ_DIV2;
   osc.PLL.PLLR = RCC_PLLR_DIV2;
   HAL_RCC_OscConfig(&osc);
-  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET)
-    ;
-  RCC_ClkInitTypeDef clk = { 0 };
+  while (__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY) == RESET) {}
+  RCC_ClkInitTypeDef clk = {0};
   clk.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   clk.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   clk.AHBCLKDivider = RCC_SYSCLK_DIV1;
   clk.APB1CLKDivider = RCC_HCLK_DIV1;
   clk.APB2CLKDivider = RCC_HCLK_DIV1;
   HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_4);
-  RCC_PeriphCLKInitTypeDef periph = { 0 };
+  RCC_PeriphCLKInitTypeDef periph = {0};
   periph.PeriphClockSelection = RCC_PERIPHCLK_USB;
   periph.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
   HAL_RCCEx_PeriphCLKConfig(&periph);
   __HAL_RCC_CRS_CLK_ENABLE();
-  RCC_CRSInitTypeDef crs = { 0 };
+  RCC_CRSInitTypeDef crs = {0};
   crs.Prescaler = RCC_CRS_SYNC_DIV1;
   crs.Source = RCC_CRS_SYNC_SOURCE_USB;
   crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
   crs.ErrorLimitValue = 34;
   crs.HSI48CalibrationValue = 32;
   HAL_RCCEx_CRSConfig(&crs);
+  SystemCoreClockUpdate();
 }
 
-================================================
- PATH: Firmware/MSC-Module/vdrive.h
-================================================
-#ifndef VDRIVE_H
-#define VDRIVE_H
-void vdrive_init(void);
-#endif
 
 ================================================
- PATH: Firmware/MSC-Module/Config-Module/config.ini
-================================================
-
-
-================================================
- PATH: Firmware/MSC-Module/system.h
+ PATH: Firmware/src/Core-Module/system.h
 ================================================
 #ifndef SYSTEM_H
 #define SYSTEM_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void SystemClock_Config(void);
+void SystemClock_Config(void);
 #ifdef __cplusplus
 }
 #endif
 #endif
 
-================================================
- PATH: Firmware/MSC-Module/vdrive.cpp
-================================================
-#include "vdrive.h"
-#include <USBMSC.h>
-#include <string.h>
-
-static const uint32_t SECTOR_COUNT = 141312;
-static const uint32_t SECTOR_SIZE = 512;
-
-static USBMSC usb_msc;
-
-static const char kConfigIni[] = "[Mouse]\r\nCPI=800\r\n";
-
-static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize) {
-  uint8_t* b = (uint8_t*)buffer;
-  memset(b, 0, bufsize);
-
-  if (lba == 0) {
-    b[0] = 0xEB;
-    b[1] = 0x3C;
-    b[2] = 0x90;
-    memcpy(b + 3, "MSDOS5.0", 8);
-    b[11] = 0x00;
-    b[12] = 0x02;
-    b[13] = 0x40;
-    b[14] = 0x01;
-    b[15] = 0x00;
-    b[16] = 0x02;
-    b[17] = 0x10;
-    b[18] = 0x00;
-    b[19] = 0x00;
-    b[20] = 0x00;
-    b[21] = 0xF8;
-    b[22] = 0x10;
-    b[23] = 0x00;
-    b[24] = 0x01;
-    b[25] = 0x00;
-    b[26] = 0x01;
-    b[27] = 0x00;
-    b[32] = 0x00;
-    b[33] = 0x28;
-    b[34] = 0x02;
-    b[35] = 0x00;
-    b[36] = 0x80;
-    b[37] = 0x00;
-    b[38] = 0x29;
-    b[39] = 0x78;
-    b[40] = 0x56;
-    b[41] = 0x34;
-    b[42] = 0x12;
-    memcpy(b + 43, "COBALT-X  ", 11);
-    memcpy(b + 54, "FAT16   ", 8);
-    b[510] = 0x55;
-    b[511] = 0xAA;
-  } else if (lba == 1 || lba == 17) {
-    b[0] = 0xF8;
-    b[1] = 0xFF;
-    b[2] = 0xFF;
-    b[3] = 0xFF;
-    b[4] = 0xFF;
-    b[5] = 0xFF;
-  } else if (lba == 33) {
-    b[0] = 'C';
-    b[1] = 'O';
-    b[2] = 'N';
-    b[3] = 'F';
-    b[4] = 'I';
-    b[5] = 'G';
-    b[6] = ' ';
-    b[7] = ' ';
-    b[8] = 'I';
-    b[9] = 'N';
-    b[10] = 'I';
-    b[11] = 0x20;
-    b[26] = 0x02;
-    b[27] = 0x00;
-    uint32_t fsize = strlen(kConfigIni);
-    b[28] = (uint8_t)fsize;
-    b[29] = (uint8_t)(fsize >> 8);
-    b[30] = (uint8_t)(fsize >> 16);
-    b[31] = (uint8_t)(fsize >> 24);
-  } else if (lba == 34) {
-    memcpy(b, kConfigIni, strlen(kConfigIni));
-  }
-  return (int32_t)bufsize;
-}
-
-static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize) {
-  (void)lba;
-  (void)buffer;
-  return (int32_t)bufsize;
-}
-
-static void msc_flush_cb(void) {}
-
-void vdrive_init(void) {
-  usb_msc.setID("Synarix", "Cobalt-X Config", "1.0");
-  usb_msc.setCapacity(SECTOR_COUNT, SECTOR_SIZE);
-  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);
-  usb_msc.begin();
-}
 
 ================================================
- PATH: Firmware/MSC-Module/build_opt.h
-================================================
--DUSBCON
--DHAL_PCD_MODULE_ENABLED
--DSTM32G4xx
--DUSE_HAL_DRIVER
--DVECT_TAB_OFFSET=0x0
-
-================================================
- PATH: Firmware/MSC-Module/vDrive-Firmware.ino
-================================================
-// BOOTLOADER_FLAG: To flash via custom bootloader instead of Arduino IDE,
-// change -DVECT_TAB_OFFSET=0x0 to -DVECT_TAB_OFFSET=0x14000 in build_opt.h
-
-#include <Arduino.h>
-#include "system.h"
-#include "vdrive.h"
-
-void setup(void) {
-  SystemClock_Config();
-  vdrive_init();
-}
-
-void loop(void) {}
-
-================================================
- PATH: Firmware/macro.h
-================================================
-#ifndef MACRO_H
-#define MACRO_H
-
-#include <stdint.h>
-
-void macro_init(void);
-uint8_t macro_update(uint8_t buttons, int32_t *delta);
-
-#endif
-
-================================================
- PATH: Firmware/macro.cpp
-================================================
-#include "macro.h"
-
-static uint8_t hyprx_mode = 0;
-static uint8_t active_target = 0;
-static int32_t pending = 0;
-static uint8_t state = 0;
-static uint8_t last_mac = 0;
-static uint8_t last_mmb = 0;
-
-void macro_init(void) {
-  hyprx_mode = 0;
-  active_target = 0;
-  pending = 0;
-  state = 0;
-  last_mac = 0;
-  last_mmb = 0;
-  last_mac = 0;
-  last_mmb = 0;
-}
-
-uint8_t macro_update(uint8_t buttons, int32_t *delta) {
-  uint8_t mac = (buttons >> 3) & 1;
-  if (mac && !last_mac) {
-    hyprx_mode = !hyprx_mode;
-    if (!hyprx_mode) {
-      pending = 0;
-      state = 0;
-    }
-  }
-  last_mac = mac;
-
-  uint8_t mmb = (buttons >> 2) & 1;
-  if (hyprx_mode && mmb && !last_mmb) {
-    active_target = !active_target;
-  }
-  last_mmb = mmb;
-
-  if (hyprx_mode) {
-    int32_t d = *delta;
-    if (d != 0) {
-      pending += (d > 0) ? (d * 2) : (-d * 2);
-      *delta = 0;
-    }
-  }
-
-  uint8_t synth = 0;
-  if (hyprx_mode && pending > 0) {
-    if (state) {
-      state = 0;
-      pending--;
-    } else {
-      state = 1;
-    }
-    if (state) synth = (active_target == 0) ? 0x01 : 0x02;
-  } else {
-    state = 0;
-  }
-
-  uint8_t final = buttons;
-  if (hyprx_mode) {
-    final &= ~0x04;
-    final |= synth;
-  }
-  return final & 0x07;
-}
-
-================================================
- PATH: Firmware/timer.h
+ PATH: Firmware/src/Core-Module/timer.h
 ================================================
 #ifndef TIMER_H
 #define TIMER_H
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-  void timer_init(void);
-  void timer_resync(void);
-
+void timer_init(void);
+void timer_resync(void);
 #ifdef __cplusplus
 }
 #endif
-
 #endif
+
 
 ================================================
- PATH: Firmware/usb_hid.h
+ PATH: Firmware/usbd_conf_custom.h
 ================================================
-#ifndef USB_HID_H
-#define USB_HID_H
+#pragma once
+#undef USB_VID
+#define USB_VID 0x1209
+#undef USB_PID
+#define USB_PID 0xC0BA
+#undef USB_MANUFACTURER_STRING
+#define USB_MANUFACTURER_STRING "Synarix"
+#undef USB_PRODUCT_STRING
+#define USB_PRODUCT_STRING "Cobalt-X Zero"
+#undef HID_FS_BINTERVAL
+#define HID_FS_BINTERVAL 0x01
 
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  void usb_hid_init(void);
-  void usb_hid_send_report(uint8_t buttons, int8_t wheel);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 
 ================================================
- PATH: Firmware/pipeline.h
+ PATH: Hardware/3D Models/Top-Shell.stl
 ================================================
-#ifndef PIPELINE_H
-#define PIPELINE_H
+[Binary or non-standard text format skipped]
 
-#include <stdint.h>
-
-typedef struct {
-  uint8_t buttons;
-  int8_t wheel;
-} pipeline_report_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  void pipeline_init(void);
-  void pipeline_tick(void);
-  uint8_t pipeline_get_ready_report(pipeline_report_t *out);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 
 ================================================
  PATH: Hardware/3D Models/Bottom-Shell.stl

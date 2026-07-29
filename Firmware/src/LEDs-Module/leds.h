@@ -2,7 +2,7 @@
 #define LEDS_H
 #include <stdint.h>
 #ifdef __cplusplus
-extern "C" {
+extern "C"{
 #endif
 void leds_init(void);
 void leds_tick(void);
