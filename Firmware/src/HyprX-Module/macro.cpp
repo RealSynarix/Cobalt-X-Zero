@@ -4,22 +4,18 @@
 #define HYPRX_DIV 4
 static uint8_t hyprx_mode=0, active_target=0, press_phase=0, last_mac=0, last_mmb=0;
 static int32_t pending=0, acc=0;
-static uint32_t mmb_hold=0;
 
 void macro_init(void){
-  hyprx_mode=0;
-  active_target=0;
-  pending=0;
-  acc=0;
-  press_phase=0;
-  last_mac=0;
-  last_mmb=0;
-  mmb_hold=0;
+  hyprx_mode=0; active_target=0; pending=0; acc=0; press_phase=0; last_mac=0; last_mmb=0;
 }
 
 uint8_t macro_update(uint8_t buttons,int32_t* delta){
+  uint8_t lmb=(buttons>>0)&1u;
+  uint8_t rmb=(buttons>>1)&1u;
+  uint8_t mmb=(buttons>>2)&1u;
   uint8_t mac=(buttons>>3)&1u;
-  if(mac &&!last_mac){
+
+  if(mac && !last_mac){
     hyprx_mode^=1u;
     active_target=0;
     pending=0;
@@ -27,27 +23,19 @@ uint8_t macro_update(uint8_t buttons,int32_t* delta){
     press_phase=0;
   }
   last_mac=mac;
-  uint8_t mmb=(buttons>>2)&1u;
-  int32_t d=*delta;
+
   if(hyprx_mode){
-    if(d!=0){
-      mmb_hold=0;
-    }else{
-      if(mmb){
-        mmb_hold++;
-        if(mmb_hold>1500){
-          if(!last_mmb) active_target^=1u;
-          mmb_hold=0;
-          last_mmb=1;
-        }
-      }else{
-        mmb_hold=0;
-        last_mmb=0;
+    if(mmb && !last_mmb){
+      if(lmb && !rmb) active_target=0;
+      else if(rmb && !lmb) active_target=1;
+      else if(lmb && rmb){
+        if(lmb) active_target=0;
       }
     }
-  }else{
-    last_mmb=mmb;
   }
+  last_mmb=mmb;
+
+  int32_t d=*delta;
   if(hyprx_mode && d!=0){
     acc+=d;
     int32_t s=acc/HYPRX_DIV;

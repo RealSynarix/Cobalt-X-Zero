@@ -2,7 +2,6 @@
 #include "../HyprX-Module/macro.h"
 #include <Arduino.h>
 #include <math.h>
-
 #define PI 3.1415926f
 #define CYCLE_MS 10000u
 
@@ -20,22 +19,40 @@ void leds_init(void){
 
 void leds_tick(void){
   uint32_t t = millis() % CYCLE_MS;
-  float f = 0.5f - 0.5f * cosf((float)t / CYCLE_MS * 2.0f * PI);
+  float phase = (float)t / CYCLE_MS * 2.0f * PI;
+  float f = 0.15f + 0.85f * (0.5f - 0.5f * cosf(phase));
+
   if(macro_is_hyprx_active()){
-    float mix = (t < 5000u)? (float)t/5000.0f : (float)(10000u - t)/5000.0f;
-    uint8_t cr=192, cg=0, cb=10;
-    uint8_t or_r=255, or_g=90, or_b=0;
-    float mr = cr*(1.0f-mix) + or_r*mix;
-    float mg = cg*(1.0f-mix) + or_g*mix;
-    float mb = cb*(1.0f-mix) + or_b*mix;
-    uint8_t r = (uint8_t)(mr * f);
-    uint8_t g = (uint8_t)(mg * f);
-    uint8_t b = (uint8_t)(mb * f);
-    if(r<3) r=0; if(g<3) g=0; if(b<3) b=0;
+    uint8_t r,g,b;
+    if(t < 3000u){
+      r=200; g=0; b=0;
+    }else if(t < 4000u){
+      float p=(float)(t-3000u)/1000.0f;
+      float e=0.5f-0.5f*cosf(p*PI);
+      r=(uint8_t)(200*(1.0f-e)+255*e);
+      g=(uint8_t)(0*(1.0f-e)+70*e);
+      b=0;
+    }else if(t < 8000u){
+      r=255; g=70; b=0;
+    }else if(t < 9000u){
+      float p=(float)(t-8000u)/1000.0f;
+      float e=0.5f-0.5f*cosf(p*PI);
+      r=(uint8_t)(255*(1.0f-e)+200*e);
+      g=(uint8_t)(70*(1.0f-e)+0*e);
+      b=0;
+    }else{
+      r=200; g=0; b=0;
+    }
+    if(r<4) r=0; if(g<4) g=0; if(b<4) b=0;
+    r=(uint8_t)(r*f); g=(uint8_t)(g*f); b=(uint8_t)(b*f);
+    if(r>0 && r<15) r=15;
+    if(g>0 && g<15) g=0;
+    if(b>0 && b<15) b=0;
+    if(r==200 || r==255) g= (t>=3000u && t<9000u)? g : 0;
     set_rgb(r,g,b);
   }else{
-    uint8_t b = (uint8_t)(f * 255.0f);
-    if(b<3) b=0;
+    uint8_t b = (uint8_t)(f*255.0f);
+    if(b<38) b=38;
     set_rgb(0,0,b);
   }
 }

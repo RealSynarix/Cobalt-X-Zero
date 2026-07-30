@@ -2,7 +2,7 @@
 #define USB_H
 #include <stdint.h>
 #ifdef __cplusplus
-extern "C" {
+extern "C"{
 #endif
 void usb_init(void);
 uint8_t usb_sof_detected(void);
