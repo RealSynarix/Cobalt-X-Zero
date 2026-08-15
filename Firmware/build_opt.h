@@ -2,4 +2,6 @@
 -DUSBD_USE_HID_COMPOSITE
 -DHAL_PCD_MODULE_ENABLED
 -DVECT_TAB_OFFSET=0x0
--include usbd_conf_custom.h
+-include src/USB-Module/descriptors.h
+
+
