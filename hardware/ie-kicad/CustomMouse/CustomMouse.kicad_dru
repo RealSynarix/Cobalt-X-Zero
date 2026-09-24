@@ -1,0 +1,5 @@
+(version 1)
+(rule "Ignore clearance for Mouse Sensor"
+    (condition "A.Reference == 'SENSOR1' && B.Reference == 'SENSOR1'")
+    (constraint clearance (min -1mm))
+)

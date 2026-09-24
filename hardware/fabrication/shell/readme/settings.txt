@@ -1,0 +1,7 @@
+Material           – PETG
+Layer Height       – 0.25 mm
+First Layer Height – 0.35 mm
+Infill Density     – 9 %
+Support            – Tree (auto)
+Brim               – None
+Fuzzy Skin         – Off

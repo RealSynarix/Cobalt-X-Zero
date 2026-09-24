@@ -1,0 +1,35 @@
+Sensor Pin Layout:
+VDD:
+> 4.7uF Cap > GND
+    > 1.9v
+> 100nF Cap > GND
+
+VDDIO:
+> 3.3v
+> 100nF Cap > GND
+
+VDDPIX:
+> 10nF Cap > GND
+
+LED_P:
+> 10nF Cap > GND
+> 39 Res > 1.9v
+
+RESET:
+> 10k Res > 3.3v
+> MCU Pin PA2 (7) > 100nF Cap > GND
+
+MISO:
+> 33 Res > MCU PA6 (11)
+MOSI:
+> 33 Res > MCU PA7 (12)
+SCLK:
+> 33 Res > MCU PA5 (10)
+CS:
+> 33 Res > MCU PA4 (9)
+
+MOTION:
+> MCU PB0 (13) > 100k Res > 3.3v
+
+GND:
+> GND

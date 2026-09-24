@@ -1,0 +1,22 @@
+Tools you’ll need:
+- Pliers (to remove supports and pluck off imperfections)
+- File / sandpaper (for aesthetics and mechanical fit)
+
+General steps for every part:
+- Pluck off any stringing
+- Check for faults
+- Lightly sand flat areas (stay away from small features)
+- Remove all support material
+
+Bottom Shell:
+- If needed, sand the inside of the lens socket so the lens part drops in cleanly
+
+PCB-Holder:
+- sand edges of pushdown clip heavily until fit (must not be loose)
+
+Scroll Wheel:
+- Sand the rough edge that appears after printing (sand it hard)
+- Sand the little button pad that presses the MMB
+
+Side Buttons:
+- Sand the front faces (the parts your thumb actually touches)
