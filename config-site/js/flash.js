@@ -1,1 +1,1 @@
-export function copyInstructions(){return "Hold DFU + plug, copy .bin";}
+export function copyInstructions(){return "Hold DFU + plug";}
