@@ -1,203 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cobalt-X Zero Configurator</title>
-  <link rel="stylesheet" href="css/style.css" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cobalt-X Zero Config - Barebones</title>
+<link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-  <div id="connect-page" class="connect-root">
-    <div class="connect-card">
-      <div class="brand">
-        <div class="logo-dot"></div>
-        <div class="brand-text">
-          <h1>Cobalt-X Zero</h1>
-          <p id="subtitle">Configure your device directly in the browser. No installs, no accounts, no tracking. Plug in and adjust what matters.</p>
-        </div>
-      </div>
-      <div class="connect-action">
-        <button id="connect-btn" class="connect-btn">Connect Cobalt-X Zero</button>
-        <div id="connect-hint" class="hint">Uses WebHID. Requires Chrome or Edge over HTTPS. If the prompt does not appear, check permissions.</div>
-        <div id="connect-status" class="status" aria-live="polite"></div>
-      </div>
-      <div class="connect-meta">
-        <div class="meta-chip"><span>VID</span>0x1209</div>
-        <div class="meta-chip"><span>PID</span>0xC0BA</div>
-        <div class="meta-chip"><span>Report ID</span>2</div>
-      </div>
-    </div>
-    <div class="bg-glow"></div>
-  </div>
+<div id="connect-page">
+<div class="connect-card">
+<h1>Cobalt-X Zero — Barebones Config</h1>
+<p class="muted">No backend. WebHID only. Chrome/Edge + HTTPS or http://localhost:8000</p>
+<button id="connect-btn" class="connect-btn">Connect Cobalt-X Zero</button>
+<div id="connect-hint" class="hint">Spams getDevices() + requestDevice(0x1209:0xC0BA) + usagePage 0xFF00. If prompt doesn't show, check HID permissions.</div>
+<div id="connect-status" class="status"></div>
+<div class="meta"><span>VID 0x1209</span><span>PID 0xC0BA</span><span>ReportID 2</span></div>
+<div class="row" style="margin-top:12px">
+<button id="list-paired-btn" class="btn">List Paired</button>
+<span id="paired-list" class="muted"></span>
+</div>
+</div>
+</div>
 
-  <div id="app-page" class="app-root hidden">
-    <header id="topbar" class="topbar">
-      <div class="topbar-left">
-        <div class="logo-dot sm"></div>
-        <strong>Cobalt-X Zero</strong>
-        <span id="device-state" class="device-state">Connected</span>
-      </div>
-      <nav id="tabs" class="tabs">
-        <button data-tab="profiles" class="tab active">Profiles</button>
-        <button data-tab="identity" class="tab">Identity</button>
-        <button data-tab="modules" class="tab">Modules</button>
-        <button data-tab="sensor" class="tab">Sensor</button>
-        <button data-tab="buttons" class="tab">Buttons</button>
-        <button data-tab="wheel" class="tab">Wheel</button>
-        <button data-tab="hyprx" class="tab">HyprX</button>
-        <button data-tab="leds" class="tab">LEDs</button>
-        <button data-tab="pb7" class="tab">PB7</button>
-        <button data-tab="flash" class="tab">Flash</button>
-      </nav>
-    </header>
+<div id="app-page" class="hidden">
+<div class="topbar">
+<div><strong>Cobalt-X Zero</strong> <span id="device-state" class="muted">Disconnected</span></div>
+<nav id="tabs" class="tabs">
+<button data-tab="profiles" class="tab active">Profiles</button>
+<button data-tab="identity" class="tab">Identity</button>
+<button data-tab="modules" class="tab">Modules</button>
+<button data-tab="sensor" class="tab">Sensor</button>
+<button data-tab="buttons" class="tab">Buttons</button>
+<button data-tab="wheel" class="tab">Wheel</button>
+<button data-tab="hyprx" class="tab">HyprX</button>
+<button data-tab="leds" class="tab">LEDs</button>
+<button data-tab="pb7" class="tab">PB7</button>
+<button data-tab="flash" class="tab">Flash</button>
+</nav>
+</div>
 
-    <main class="views">
-      <section id="view-profiles" class="view active">
-        <div class="grid-2">
-          <div class="card">
-            <h3>Save current setup</h3>
-            <div class="row">
-              <input id="profile-name" placeholder="e.g. Competition, Office, Low Sens" maxlength="32" />
-              <button id="profile-save" class="btn primary">Save Profile</button>
-            </div>
-            <p class="muted">Saves every field from this session to your browser. You can keep multiple mice fully distinct.</p>
-          </div>
-          <div class="card">
-            <h3>Active profile</h3>
-            <div class="row">
-              <select id="profile-active"></select>
-              <button id="profile-load" class="btn">Load</button>
-              <button id="profile-delete" class="btn danger">Delete</button>
-            </div>
-            <div id="profile-list" class="profile-list"></div>
-          </div>
-        </div>
-      </section>
+<main class="views">
+<section id="view-profiles" class="view active">
+<div class="grid-2">
+<div class="card"><h3>Save current setup</h3><div class="row"><input id="profile-name" placeholder="e.g. Competition" maxlength="32"/><button id="profile-save" class="btn primary">Save Profile</button></div><p class="muted">Saves every field snapshot to localStorage. Each profile = whole new mouse.</p></div>
+<div class="card"><h3>Active profile</h3><div class="row"><select id="profile-active"></select><button id="profile-load" class="btn">Load</button><button id="profile-delete" class="btn danger">Delete</button></div><div id="profile-list"></div></div>
+</div>
+</section>
 
-      <section id="view-identity" class="view">
-        <div class="grid-2">
-          <div class="card"><label>Device name</label><input id="f-device_name" data-field="1" type="text" readonly /><span class="ro">Read only</span></div>
-          <div class="card"><label>Manufacturer</label><input id="f-manufacturer" data-field="2" type="text" readonly /></div>
-          <div class="card"><label>Serial</label><input id="f-serial" data-field="3" type="text" readonly /></div>
-          <div class="card"><label>Firmware</label><input id="f-fw" data-field="4" type="text" readonly /></div>
-          <div class="card"><label>VID / PID</label><div class="row"><input id="f-vid" readonly /><input id="f-pid" readonly /></div></div>
-        </div>
-      </section>
+<section id="view-identity" class="view">
+<div class="grid-2">
+<div class="card"><label>Device name</label><input id="f-device_name" data-field="1" type="text" readonly/><span class="muted">Read only</span></div>
+<div class="card"><label>Manufacturer</label><input id="f-manufacturer" data-field="2" type="text" readonly/></div>
+<div class="card"><label>Serial</label><input id="f-serial" data-field="3" type="text" readonly/></div>
+<div class="card"><label>Firmware</label><input id="f-fw" data-field="4" type="text" readonly/></div>
+<div class="card"><label>VID / PID</label><div class="row"><input id="f-vid" readonly/><input id="f-pid" readonly/></div></div>
+</div>
+</section>
 
-      <section id="view-modules" class="view">
-        <div class="grid-3">
-          <div class="card toggle-card"><div><h4>Sensor</h4><p class="muted">PMW or equivalent pipeline</p></div><label class="switch"><input id="f-mod_sensor" data-field="16" type="checkbox" checked /><span></span></label></div>
-          <div class="card toggle-card"><div><h4>Buttons</h4><p class="muted">PB3 to PB7 handling</p></div><label class="switch"><input id="f-mod_buttons" data-field="17" type="checkbox" checked /><span></span></label></div>
-          <div class="card toggle-card"><div><h4>Scroll wheel</h4><p class="muted">Encoder and invert</p></div><label class="switch"><input id="f-mod_scroll" data-field="18" type="checkbox" checked /><span></span></label></div>
-          <div class="card toggle-card"><div><h4>HyprX</h4><p class="muted">Scroll to click engine</p></div><label class="switch"><input id="f-mod_hyprx" data-field="19" type="checkbox" /><span></span></label></div>
-          <div class="card toggle-card"><div><h4>LEDs</h4><p class="muted">Effects and brightness</p></div><label class="switch"><input id="f-mod_leds" data-field="20" type="checkbox" checked /><span></span></label></div>
-          <div class="card toggle-card"><div><h4>SOF sync</h4><p class="muted">USB start-of-frame sync</p></div><label class="switch"><input id="f-mod_sof" data-field="21" type="checkbox" /><span></span></label></div>
-        </div>
-      </section>
+<section id="view-modules" class="view">
+<div class="grid-3">
+<div class="card"><label><input id="f-mod_sensor" data-field="16" type="checkbox" checked/> Sensor module</label><span class="muted">Stored but no-op (sensor disabled in this build)</span></div>
+<div class="card"><label><input id="f-mod_buttons" data-field="17" type="checkbox" checked/> Buttons</label></div>
+<div class="card"><label><input id="f-mod_scroll" data-field="18" type="checkbox" checked/> Scroll wheel</label></div>
+<div class="card"><label><input id="f-mod_hyprx" data-field="19" type="checkbox"/> HyprX</label></div>
+<div class="card"><label><input id="f-mod_leds" data-field="20" type="checkbox" checked/> LEDs</label></div>
+<div class="card"><label><input id="f-mod_sof" data-field="21" type="checkbox" checked/> SOF sync</label></div>
+</div>
+</section>
 
-      <section id="view-sensor" class="view">
-        <div class="grid-2">
-          <div class="card"><label>DPI (100 - 32000)</label><input id="f-dpi" data-field="32" type="number" min="100" max="32000" step="50" value="800" /><input id="f-dpi-r" type="range" min="100" max="32000" step="50" value="800" /></div>
-          <div class="card"><label>Polling rate</label><select id="f-poll" data-field="33"><option value="125">125 Hz</option><option value="250">250 Hz</option><option value="500">500 Hz</option><option value="1000" selected>1000 Hz</option><option value="2000">2000 Hz</option><option value="4000">4000 Hz</option><option value="8000">8000 Hz</option></select></div>
-          <div class="card"><label>LOD mm (1 - 3)</label><input id="f-lod_mm" data-field="34" type="number" min="1" max="3" step="1" value="2" /></div>
-          <div class="card"><label>LOD SQUAL (10 - 200)</label><input id="f-lod_squal" data-field="35" type="number" min="10" max="200" value="80" /></div>
-          <div class="card toggle-card"><div><h4>Angle snap</h4><p class="muted">Straighten movement</p></div><label class="switch"><input id="f-angle_snap" data-field="36" type="checkbox" /><span></span></label></div>
-          <div class="card"><label>Angle snap strength (0 - 100)</label><input id="f-angle_strength" data-field="37" type="number" min="0" max="100" value="0" /></div>
-          <div class="card"><label>Surface</label><select id="f-surface" data-field="38"><option value="0">Control</option><option value="1">Speed</option><option value="2">Hard</option><option value="3">Glass</option></select></div>
-        </div>
-      </section>
+<section id="view-sensor" class="view">
+<div class="grid-2">
+<div class="card"><label>DPI 100-32000 (stored, no-op)</label><input id="f-dpi" data-field="32" type="number" min="100" max="32000" step="50" value="800"/></div>
+<div class="card"><label>Polling 125-8000 (stored, no-op)</label><select id="f-poll" data-field="33"><option value="125">125</option><option value="250">250</option><option value="500">500</option><option value="1000" selected>1000</option><option value="2000">2000</option><option value="4000">4000</option><option value="8000">8000</option></select></div>
+<div class="card"><label>LOD mm 1-3 (stored, no-op)</label><input id="f-lod_mm" data-field="34" type="number" min="1" max="3" value="2"/></div>
+<div class="card"><label>LOD SQUAL 10-200 (stored, no-op)</label><input id="f-lod_squal" data-field="35" type="number" min="10" max="200" value="80"/></div>
+<div class="card"><label><input id="f-angle_snap" data-field="36" type="checkbox"/> Angle snap (stored, no-op)</label></div>
+<div class="card"><label>Angle strength 0-100 (stored, no-op)</label><input id="f-angle_strength" data-field="37" type="number" min="0" max="100" value="0"/></div>
+<div class="card"><label>Surface 0-3 (stored, no-op)</label><select id="f-surface" data-field="38"><option value="0">Control</option><option value="1">Speed</option><option value="2">Hard</option><option value="3">Glass</option></select></div>
+</div>
+</section>
 
-      <section id="view-buttons" class="view">
-        <div class="grid-2">
-          <div class="card"><label>PB3 debounce ms (0 - 20)</label><input data-field="48" id="f-db_pb3" type="number" min="0" max="20" value="4" /></div>
-          <div class="card"><label>PB4 debounce ms (0 - 20)</label><input data-field="49" id="f-db_pb4" type="number" min="0" max="20" value="4" /></div>
-          <div class="card"><label>PB5 debounce ms (0 - 20)</label><input data-field="50" id="f-db_pb5" type="number" min="0" max="20" value="4" /></div>
-          <div class="card"><label>PB6 debounce ms (0 - 20)</label><input data-field="51" id="f-db_pb6" type="number" min="0" max="20" value="4" /></div>
-          <div class="card"><label>PB7 debounce ms (0 - 20)</label><input data-field="52" id="f-db_pb7" type="number" min="0" max="20" value="8" /></div>
-          <div class="card"><label>Click mode</label><select data-field="53" id="f-click_mode"><option value="0">Standard</option><option value="1">Speed</option><option value="2">Competition</option></select></div>
-        </div>
-      </section>
+<section id="view-buttons" class="view">
+<div class="grid-2">
+<div class="card"><label>PB3 debounce 0-20</label><input data-field="48" id="f-db_pb3" type="number" min="0" max="20" value="4"/></div>
+<div class="card"><label>PB4 debounce 0-20</label><input data-field="49" id="f-db_pb4" type="number" min="0" max="20" value="4"/></div>
+<div class="card"><label>PB5 debounce 0-20</label><input data-field="50" id="f-db_pb5" type="number" min="0" max="20" value="4"/></div>
+<div class="card"><label>PB6 debounce 0-20</label><input data-field="51" id="f-db_pb6" type="number" min="0" max="20" value="4"/></div>
+<div class="card"><label>PB7 debounce 0-20</label><input data-field="52" id="f-db_pb7" type="number" min="0" max="20" value="8"/></div>
+<div class="card"><label>Click mode 0-2</label><select data-field="53" id="f-click_mode"><option value="0">Standard</option><option value="1">Speed</option><option value="2">Competition</option></select></div>
+</div>
+</section>
 
-      <section id="view-wheel" class="view">
-        <div class="grid-2">
-          <div class="card"><label>Wheel divider (1 - 8)</label><input data-field="64" id="f-wheel_div" type="number" min="1" max="8" value="1" /></div>
-          <div class="card toggle-card"><div><h4>Invert wheel</h4></div><label class="switch"><input data-field="65" id="f-wheel_inv" type="checkbox" /><span></span></label></div>
-          <div class="card toggle-card"><div><h4>Smooth wheel</h4></div><label class="switch"><input data-field="66" id="f-wheel_smooth" type="checkbox" checked /><span></span></label></div>
-        </div>
-      </section>
+<section id="view-wheel" class="view">
+<div class="grid-2">
+<div class="card"><label>Wheel divider 1-8</label><input data-field="64" id="f-wheel_div" type="number" min="1" max="8" value="1"/></div>
+<div class="card"><label><input data-field="65" id="f-wheel_inv" type="checkbox"/> Invert wheel</label></div>
+<div class="card"><label><input data-field="66" id="f-wheel_smooth" type="checkbox" checked/> Smooth wheel</label></div>
+</div>
+</section>
 
-      <section id="view-hyprx" class="view">
-        <div class="grid-2">
-          <div class="card toggle-card"><div><h4>Enable HyprX</h4><p class="muted">Turn scroll into clicks</p></div><label class="switch"><input data-field="80" id="f-hyprx_en" type="checkbox" /><span></span></label></div>
-          <div class="card toggle-card"><div><h4>Change LED on trigger</h4></div><label class="switch"><input data-field="81" id="f-hyprx_led" type="checkbox" /><span></span></label></div>
-          <div class="card"><label>Target (0 = PB4, 1 = PB5)</label><input data-field="82" id="f-hyprx_target" type="number" min="0" max="1" value="0" /></div>
-          <div class="card"><label>Scroll to click (1 - 24)</label><input data-field="83" id="f-hyprx_stc" type="number" min="1" max="24" value="4" /></div>
-          <div class="card"><label>Divider (1 - 4)</label><input data-field="84" id="f-hyprx_div" type="number" min="1" max="4" value="1" /></div>
-          <div class="card"><label>Hold ms (0 - 500)</label><input data-field="85" id="f-hyprx_hold" type="number" min="0" max="500" value="40" /></div>
-        </div>
-      </section>
+<section id="view-hyprx" class="view">
+<div class="grid-2">
+<div class="card"><label><input data-field="80" id="f-hyprx_en" type="checkbox"/> Enable HyprX</label></div>
+<div class="card"><label><input data-field="81" id="f-hyprx_led" type="checkbox"/> Change LED on trigger</label></div>
+<div class="card"><label>Target 0=PB4 1=PB5</label><input data-field="82" id="f-hyprx_target" type="number" min="0" max="1" value="0"/></div>
+<div class="card"><label>Scroll to click 1-24</label><input data-field="83" id="f-hyprx_stc" type="number" min="1" max="24" value="4"/></div>
+<div class="card"><label>Divider 1-4</label><input data-field="84" id="f-hyprx_div" type="number" min="1" max="4" value="1"/></div>
+<div class="card"><label>Hold ms 0-500</label><input data-field="85" id="f-hyprx_hold" type="number" min="0" max="500" value="40"/></div>
+</div>
+</section>
 
-      <section id="view-leds" class="view">
-        <div class="grid-2">
-          <div class="card"><label>Default color HEX</label><input data-field="96" id="f-led_def" type="color" value="#0a5bd7" /></div>
-          <div class="card"><label>Macro color HEX</label><input data-field="97" id="f-led_macro" type="color" value="#ffffff" /></div>
-          <div class="card"><label>Brightness (0 - 255)</label><input data-field="98" id="f-led_bri" type="range" min="0" max="255" value="128" /><span id="f-led_bri-v" class="mono">128</span></div>
-          <div class="card"><label>Effect</label><select data-field="99" id="f-led_eff"><option value="0">Solid</option><option value="1">Breath</option><option value="2">Rainbow</option><option value="3">Reactive</option><option value="4">Off</option></select></div>
-          <div class="card"><label>Speed (0 - 255)</label><input data-field="100" id="f-led_speed" type="range" min="0" max="255" value="100" /></div>
-        </div>
-      </section>
+<section id="view-leds" class="view">
+<div class="grid-2">
+<div class="card"><label>Default color HEX</label><input data-field="96" id="f-led_def" type="color" value="#0a5bd7"/></div>
+<div class="card"><label>Macro color HEX</label><input data-field="97" id="f-led_macro" type="color" value="#ffffff"/></div>
+<div class="card"><label>Brightness 0-255</label><input data-field="98" id="f-led_bri" type="range" min="0" max="255" value="128"/><span id="f-led_bri-v">128</span></div>
+<div class="card"><label>Effect 0-4</label><select data-field="99" id="f-led_eff"><option value="0">Solid</option><option value="1">Breath</option><option value="2">Rainbow</option><option value="3">Reactive</option><option value="4">Off</option></select></div>
+<div class="card"><label>Speed 0-255</label><input data-field="100" id="f-led_speed" type="range" min="0" max="255" value="100"/></div>
+</div>
+</section>
 
-      <section id="view-pb7" class="view">
-        <div class="grid-2">
-          <div class="card"><label>PB7 Mode</label><select data-field="112" id="f-pb7_mode"><option value="0">Normal</option><option value="1">Macro</option><option value="2">Layer</option></select></div>
-          <div class="card"><label>Action type</label><select data-field="113" id="f-pb7_at"><option value="0">Mouse</option><option value="1">Key</option><option value="2">Combo</option><option value="3">Media</option></select></div>
-          <div class="card"><label>Mouse button (0-7)</label><input data-field="114" id="f-pb7_mouse" type="number" min="0" max="7" value="0" /></div>
-          <div class="card"><label>Key code (HID)</label><input data-field="115" id="f-pb7_key" type="number" min="0" max="255" value="0" /></div>
-          <div class="card"><label>Combo CSV (e.g. 224,4)</label><input data-field="116" id="f-pb7_combo" type="text" placeholder="e.g. 224,4 for Ctrl+A" /></div>
-          <div class="card"><label>Media (0-12)</label><input data-field="117" id="f-pb7_media" type="number" min="0" max="12" value="0" /></div>
-        </div>
-      </section>
+<section id="view-pb7" class="view">
+<div class="grid-2">
+<div class="card"><label>PB7 Mode 0-2</label><select data-field="112" id="f-pb7_mode"><option value="0">Normal</option><option value="1">Macro</option><option value="2">Layer</option></select></div>
+<div class="card"><label>Action type 0-3</label><select data-field="113" id="f-pb7_at"><option value="0">Mouse</option><option value="1">Key</option><option value="2">Combo</option><option value="3">Media</option></select></div>
+<div class="card"><label>Mouse button 0-7</label><input data-field="114" id="f-pb7_mouse" type="number" min="0" max="7" value="0"/></div>
+<div class="card"><label>Key code 0-255</label><input data-field="115" id="f-pb7_key" type="number" min="0" max="255" value="0"/></div>
+<div class="card"><label>Combo CSV e.g. 224,4</label><input data-field="116" id="f-pb7_combo" type="text" placeholder="224,4"/></div>
+<div class="card"><label>Media 0-12</label><input data-field="117" id="f-pb7_media" type="number" min="0" max="12" value="0"/></div>
+</div>
+</section>
 
-      <section id="view-flash" class="view">
-        <div class="flash-wrap">
-          <div class="card flash-hero">
-            <h2>Flash firmware in 30 seconds</h2>
-            <p>No drivers. No terminal. The MCU exposes a USB drive in DFU mode.</p>
-            <div class="steps">
-              <div class="step"><span class="num">1</span><div><h4>Enter DFU</h4><p>Hold the tiny DFU button on the PCB, then plug the mouse in. Keep holding for 2 seconds. A drive named COBALT-DFU should appear.</p></div></div>
-              <div class="step"><span class="num">2</span><div><h4>Copy firmware</h4><p>Drag the .bin file onto that drive. Or use STM32CubeProgrammer: connect, open file, click Start Programming. Wait until it says success.</p></div></div>
-              <div class="step"><span class="num">3</span><div><h4>Done</h4><p>Unplug, then plug back without holding DFU. The configurator should reconnect automatically.</p></div></div>
-            </div>
-            <div class="row">
-              <a id="fw-link" class="btn primary" href="firmware/cobalt-x-zero_v0.9.1.bin" download>Download firmware .bin</a>
-              <button id="fw-help" class="btn">Copy instructions</button>
-            </div>
-            <p class="muted small">If the drive does not show, try another cable and hold DFU before USB is powered. Firmware file is a placeholder until you link your release. Keep VID 0x1209 PID 0xC0BA in the binary descriptors.</p>
-          </div>
-          <div class="card">
-            <h3>Troubleshooting</h3>
-            <ul class="list">
-              <li>Chrome required: WebHID only works in Chromium over HTTPS. GitHub Pages is fine.</li>
-              <li>If device shows as "Access denied", close other apps that may hold the HID handle and reload.</li>
-              <li>Do not flash while Apply All is running. Finish writes first.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-    </main>
+<section id="view-flash" class="view">
+<div class="card"><h3>Flash in 30s</h3><p>Hold DFU button on PCB, plug mouse, keep 2s. Drive COBALT-DFU appears. Drag .bin. Or STM32CubeProgrammer.</p><div class="row"><a id="fw-link" class="btn primary" href="firmware/cobalt-x-zero_v0.9.1.bin" download>Download .bin</a><button id="fw-help" class="btn">Copy steps</button></div><p class="muted">Chrome/Edge only. Use https:// or http://localhost:8000 (not file://). If Access denied, close other HID apps and reload. Do not flash while Apply All running.</p></div>
+</section>
+</main>
 
-    <div id="apply-bar" class="apply-bar">
-      <div class="apply-left">
-        <div id="apply-progress" class="progress"><div class="progress-fill"></div></div>
-        <span id="apply-text" class="muted">Ready to apply</span>
-      </div>
-      <div class="apply-right">
-        <button id="apply-read" class="btn">Read device</button>
-        <button id="apply-all" class="btn primary">Apply all</button>
-      </div>
-    </div>
-  </div>
+<div id="apply-bar" class="apply-bar">
+<div class="row"><div class="progress"><div class="progress-fill"></div></div><span id="apply-text" class="muted">Ready</span></div>
+<div class="row"><button id="apply-read" class="btn">Read device</button><button id="apply-all" class="btn primary">Apply all</button></div>
+</div>
+</div>
 
-  <script type="module" src="js/app.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
