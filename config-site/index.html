@@ -1,6 +1,6 @@
-<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Cobalt-X Zero - Merged</title><style>
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Cobalt-X Zero - Minimal Config</title><style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;background:#0a0a0a;color:#eee;padding:18px}
-.card{border:1px solid #222;background:#111;border-radius:14px;padding:18px;max-width:980px;margin:0 auto}
+.card{border:1px solid #222;background:#111;border-radius:14px;padding:18px;max-width:880px;margin:0 auto}
 button{padding:9px 13px;border:0;border-radius:8px;background:#eee;color:#111;font-weight:700;cursor:pointer;margin:4px 4px 0 0}
 button:disabled{opacity:.35;cursor:not-allowed}
 button.secondary{background:#222;color:#eee;border:1px solid #333}
@@ -12,11 +12,6 @@ label{font-size:12px;font-weight:600;display:block;margin-top:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:700px){.grid{grid-template-columns:1fr}}
 .dirty{outline:2px solid #0a5bd7 !important}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
-.tab{padding:7px 10px;border-radius:20px;background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;font-size:12px}
-.tab.active{background:#eee;color:#111;border-color:#eee}
-.tabContent{margin-top:10px}
-.hidden{display:none}
 .profile{display:flex;align-items:center;gap:10px;border:1px solid #222;background:#0e0e0e;border-radius:10px;padding:8px 10px;margin:6px 0}
 .icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0}
 .profileInfo{flex:1}
@@ -24,13 +19,27 @@ label{font-size:12px;font-weight:600;display:block;margin-top:10px}
 .profileMeta{font-size:11px;color:#888}
 .badge{font-size:10px;background:#222;border:1px solid #333;border-radius:6px;padding:2px 6px;margin-left:6px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.err{color:#ff6b6b;font-size:11px;margin-top:4px}
 </style></head><body><div class="card">
-<h2>Cobalt-X Zero - Merged Base+Config</h2>
-<p class="muted">VID 0x1209 PID 0xC0BA RID 2 — mouse+vendor+keyboard — profiles in localStorage — validated writes</p>
+<h2>Cobalt-X Zero - Minimal Working Config</h2>
+<p class="muted">VID 0x1209 PID 0xC0BA RID 2 — bare minimal to test read/write — vendor-only firmware recommended</p>
 <div class="row"><button id="connect">Connect</button><button id="forget">Forget</button><button id="disconnect" disabled>Disconnect</button><button id="ping" disabled>Ping</button><button id="read" class="secondary" disabled>Re-Read All</button><button id="save" disabled>Save Changed (0)</button><button id="reset" class="secondary">Factory Reset</button></div>
-<div id="status">Ready — connect to load</div>
+<div id="status">Ready — use vendor-only firmware for best result</div>
 <pre id="log"></pre>
+
+<div id="panel" style="display:none;margin-top:18px">
+<h4>Essential Configs (working)</h4>
+<div class="grid">
+<label>Device Name FID1<input id="f1" maxlength="31"></label>
+<label>Manufacturer FID2<input id="f2" maxlength="31"></label>
+<label>Serial FID3<input id="f3" maxlength="15"></label>
+<label>FW Version FID4 (read-only)<input id="f4" maxlength="15" readonly></label>
+<label>Poll Hz FID33<select id="f33"><option value="125">125</option><option value="250">250</option><option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option><option value="4000">4000</option><option value="8000">8000</option></select></label>
+<label>LED Default FID96 (hex)<input id="f96" type="color"></label>
+<label>LED Macro FID97 (hex)<input id="f97" type="color"></label>
+<label>LED Brightness FID98 (0-255)<input id="f98" type="number" min="0" max="255"></label>
+</div>
+<p class="muted">These are the only values that actually do something in dev build. Others are stubbed in firmware but still readable/writable if you add them back. Poll affects SOF throttling, LEDs via PWM, strings via RAM.</p>
+</div>
 
 <div id="profilesBox" style="margin-top:16px;border-top:1px solid #222;padding-top:14px">
 <h3 style="margin:0 0 8px 0">Profiles — localStorage</h3>
@@ -40,111 +49,8 @@ label{font-size:12px;font-weight:600;display:block;margin-top:10px}
 <label>Icon color<input id="newProfileColor" type="color" value="#0a5bd7"></label>
 </div>
 <div class="row"><button id="createProfile">Save Current as Profile</button><button id="exportProfiles" class="secondary">Export JSON</button><input id="importFile" type="file" accept=".json" style="display:none"><button id="importProfiles" class="secondary">Import JSON</button></div>
-<p class="muted">Icon = first letter + background color. Profiles store all FIDs. Loading a profile applies values and marks dirty — then press Save Changed.</p>
-</div>
-
-<div id="panel" style="display:none;margin-top:18px">
-<div class="tabs">
-<button class="tab active" data-tab="device">Device</button>
-<button class="tab" data-tab="sensor">Sensor</button>
-<button class="tab" data-tab="buttons">Buttons</button>
-<button class="tab" data-tab="scroll">Scroll</button>
-<button class="tab" data-tab="led">LED</button>
-<button class="tab" data-tab="hyprx">HyprX</button>
-<button class="tab" data-tab="pio">PIO Button</button>
-</div>
-
-<div id="tab-device" class="tabContent">
-<h4>Device & Modules</h4>
-<div class="grid">
-<label>Device Name FID1<input id="f1" maxlength="31"></label>
-<label>Manufacturer FID2<input id="f2" maxlength="31"></label>
-<label>Serial FID3<input id="f3" maxlength="15"></label>
-<label>FW Version FID4 (read-only)<input id="f4" maxlength="15" readonly></label>
-<label>Mod Sensor FID16<select id="f16"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>Mod Buttons FID17<select id="f17"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>Mod Scroll FID18<select id="f18"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>Mod HyprX FID19<select id="f19"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>Mod LEDs FID20<select id="f20"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>Mod SOF FID21<select id="f21"><option value="0">Off</option><option value="1">On</option></select></label>
 </div>
 </div>
-
-<div id="tab-sensor" class="tabContent hidden">
-<h4>Sensor</h4>
-<div class="grid">
-<label>DPI FID32 (100-32000)<input id="f32" type="number" min="100" max="32000"></label>
-<label>Poll Hz FID33<select id="f33"><option value="125">125</option><option value="250">250</option><option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option><option value="4000">4000</option><option value="8000">8000</option></select></label>
-<label>LOD mm FID34 (1-3)<input id="f34" type="number" min="1" max="3"></label>
-<label>LOD Squal FID35 (10-200)<input id="f35" type="number" min="10" max="200"></label>
-<label>Angle Snap FID36<select id="f36"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>Angle Strength FID37 (0-100)<input id="f37" type="number" min="0" max="100"></label>
-<label>Surface FID38 (0-3)<select id="f38"><option value="0">0 Default</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
-</div>
-</div>
-
-<div id="tab-buttons" class="tabContent hidden">
-<h4>Buttons — Debounce & Click</h4>
-<div class="grid">
-<label>DB PB3 FID48 (0-20 ms)<input id="f48" type="number" min="0" max="20"></label>
-<label>DB PB4 FID49<input id="f49" type="number" min="0" max="20"></label>
-<label>DB PB5 FID50<input id="f50" type="number" min="0" max="20"></label>
-<label>DB PB6 FID51<input id="f51" type="number" min="0" max="20"></label>
-<label>DB PB7 FID52 (PIO)<input id="f52" type="number" min="0" max="20"></label>
-<label>Click Mode FID53<select id="f53"><option value="0">0 Normal</option><option value="1">1 Rapid</option><option value="2">2 Safe</option></select></label>
-</div>
-</div>
-
-<div id="tab-scroll" class="tabContent hidden">
-<h4>Scroll — Invert Fixed</h4>
-<div class="grid">
-<label>Wheel Div FID64 (1-8)<input id="f64" type="number" min="1" max="8"></label>
-<label>Wheel Invert FID65 (1=inverted)<select id="f65"><option value="0">0 Normal</option><option value="1">1 Inverted</option></select></label>
-<label>Wheel Smooth FID66<select id="f66"><option value="0">Off</option><option value="1">On</option></select></label>
-</div>
-<p class="muted">Invert now actually flips scroll direction in firmware via scroll_process().</p>
-</div>
-
-<div id="tab-led" class="tabContent hidden">
-<h4>LEDs — Main + HyprX + Animation</h4>
-<div class="grid">
-<label>LED Default FID96 (main)<input id="f96" type="color" value="#0a5bd7"></label>
-<label>LED Macro FID97 (HyprX)<input id="f97" type="color" value="#ff3333"></label>
-<label>Brightness FID98 (0-255)<input id="f98" type="range" min="0" max="255" value="128"><span id="f98v" class="muted">128</span></label>
-<label>Effect FID99 (0-4)<select id="f99"><option value="0">0 Solid</option><option value="1">1 Breathing</option><option value="2">2 Blink</option><option value="3">3 Rainbow</option><option value="4">4 Chase Main/HyprX</option></select></label>
-<label>Speed FID100 (0-255)<input id="f100" type="number" min="0" max="255"></label>
-</div>
-<p class="muted">Two configs: main (96) and HyprX (97). Animation uses eff+speed.</p>
-</div>
-
-<div id="tab-hyprx" class="tabContent hidden">
-<h4>HyprX</h4>
-<div class="grid">
-<label>HyprX Enable FID80<select id="f80"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>HyprX LED FID81<select id="f81"><option value="0">Off</option><option value="1">On</option></select></label>
-<label>HyprX Target FID82<select id="f82"><option value="0">0 Left</option><option value="1">1 Right</option></select></label>
-<label>HyprX STC FID83 (1-24)<input id="f83" type="number" min="1" max="24"></label>
-<label>HyprX Div FID84 (1-4)<input id="f84" type="number" min="1" max="4"></label>
-<label>HyprX Hold FID85 (0-500 ms)<input id="f85" type="number" min="0" max="500"></label>
-</div>
-</div>
-
-<div id="tab-pio" class="tabContent hidden">
-<h4>PIO Button (PB7) — Macro Programming Works</h4>
-<div class="grid">
-<label>Mode FID112 (0-5)<select id="f112"><option value="0">0 Disabled</option><option value="1">1 Mouse Button</option><option value="2">2 Key / Macro</option><option value="3">3 Combo</option><option value="4">4 Media</option><option value="5">5 Program Me!</option></select></label>
-<label>AT FID113 (0-3)<select id="f113"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
-<label>Mouse Button FID114 (0-7)<input id="f114" type="number" min="0" max="7"></label>
-<label>Keycode FID115 (HID 0-255)<input id="f115" type="number" min="0" max="255"></label>
-<label>Combo FID116 (0-8 codes comma)<input id="f116" placeholder="e.g. 4,5,6"></label>
-<label>Media FID117 (0-12)<input id="f117" type="number" min="0" max="12"></label>
-</div>
-<p class="muted">PB7 now actually sends mouse/keyboard via composite HID. Mode 2/3/5 uses Keyboard.press.</p>
-</div>
-
-</div>
-</div>
-
 <script>
 const VID=0x1209,PID=0xC0BA,RID=2;
 let dev=null;
@@ -153,13 +59,23 @@ const $=s=>document.querySelector(s);
 const logEl=$("#log"),statusEl=$("#status");
 function log(m){logEl.textContent+=m+"\n";logEl.scrollTop=logEl.scrollHeight}
 function setStatus(m){statusEl.textContent=m}
-function enc(cmd,fid,data){const b=new Uint8Array(64);b[0]=cmd;b[1]=fid;b[2]=data.length&255;b[3]=data.length>>8;b.set(data,4);return b}
+
+function enc(cmd,fid,data){
+  const b=new Uint8Array(64);
+  b[0]=cmd; b[1]=fid; b[2]=data.length&255; b[3]=data.length>>8; b.set(data,4);
+  return b;
+}
 function dec(raw){
   let d;
   if(raw instanceof DataView){ d=new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength); }
   else if(raw instanceof Uint8Array){ d=raw; }
   else { d=new Uint8Array(raw); }
-  if(d.length<5) return {cmd:0,fid:0,len:0,status:99,payload:new Uint8Array([])};
+  // Robust: Chrome may return with or without report ID.
+  // If first byte == RID and second byte looks like cmd (1,2,4,5), strip it.
+  if(d.length>=6 && d[0]===RID && [1,2,4,5].includes(d[1])){
+    d = d.slice(1);
+  }
+  if(d.length<5) return {cmd:0,fid:0,len:0,status:99,payload:new Uint8Array([]), rawLen:d.length};
   const len=d[2]|(d[3]<<8);
   return{cmd:d[0],fid:d[1],len:len,status:d[4],payload:d.slice(5,5+len)}
 }
@@ -169,68 +85,32 @@ function u16b(v){return new Uint8Array([v&255,v>>8])}
 function b2u16(b){return b[0]|(b[1]<<8)}
 function hex2rgb(h){if(!h||h.length!==7) return [0,0,0]; return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
 function rgb2hex(r,g,b){return "#"+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}
-function getVal(id){const el=$("#"+id); return el?el.value:""}
 
+// Minimal SCHEMA - only what we need to prove read/write works
 const SCHEMA={
-1:{type:'string',max:31},2:{type:'string',max:31},3:{type:'string',max:15},4:{type:'string',max:15,readonly:true},
-16:{type:'bool'},17:{type:'bool'},18:{type:'bool'},19:{type:'bool'},20:{type:'bool'},21:{type:'bool'},
-32:{type:'u16',min:100,max:32000},33:{type:'enum',values:[125,250,500,1000,2000,4000,8000]},34:{type:'u8',min:1,max:3},35:{type:'u8',min:10,max:200},36:{type:'bool'},37:{type:'u8',min:0,max:100},38:{type:'u8',min:0,max:3},
-48:{type:'u8',min:0,max:20},49:{type:'u8',min:0,max:20},50:{type:'u8',min:0,max:20},51:{type:'u8',min:0,max:20},52:{type:'u8',min:0,max:20},53:{type:'u8',min:0,max:2},
-64:{type:'u8',min:1,max:8},65:{type:'bool'},66:{type:'bool'},
-80:{type:'bool'},81:{type:'bool'},82:{type:'u8',min:0,max:1},83:{type:'u8',min:1,max:24},84:{type:'u8',min:1,max:4},85:{type:'u16',min:0,max:500},
-96:{type:'rgb'},97:{type:'rgb'},98:{type:'u8',min:0,max:255},99:{type:'u8',min:0,max:4},100:{type:'u8',min:0,max:255},
-112:{type:'u8',min:0,max:5},113:{type:'u8',min:0,max:3},114:{type:'u8',min:0,max:7},115:{type:'u8',min:0,max:255},116:{type:'combo',max:8},117:{type:'u8',min:0,max:12}
+  1:{type:'string',max:31},2:{type:'string',max:31},3:{type:'string',max:15},4:{type:'string',max:15,readonly:true},
+  33:{type:'enum',values:[125,250,500,1000,2000,4000,8000]},
+  96:{type:'rgb'},97:{type:'rgb'},98:{type:'u8',min:0,max:255},
 };
 
 function validate(fid, rawStr){
-  const sch=SCHEMA[fid];
-  if(!sch) return {ok:false,err:'Unknown FID'};
+  const sch=SCHEMA[fid]; if(!sch) return {ok:false,err:'Unknown FID'};
   if(sch.readonly) return {ok:false,err:'Read-only'};
   if(sch.type==='string'){
-    if(typeof rawStr!=='string') return {ok:false,err:'Expected string'};
     if(rawStr.length>sch.max) return {ok:false,err:`Too long max ${sch.max}`};
-    if(/[\x00-\x1F]/.test(rawStr)) return {ok:false,err:'Control chars not allowed'};
     return {ok:true,data:str2b(rawStr)};
   }
   if(sch.type==='rgb'){
-    const m=/^#[0-9a-fA-F]{6}$/.exec(rawStr);
-    if(!m) return {ok:false,err:'Need #rrggbb'};
+    if(!/^#[0-9a-fA-F]{6}$/.test(rawStr)) return {ok:false,err:'Need #rrggbb'};
     return {ok:true,data:new Uint8Array(hex2rgb(rawStr))};
   }
-  if(sch.type==='bool'){
-    if(rawStr==="" ) return {ok:false,err:'Empty'};
-    const v=Number(rawStr);
-    if(!Number.isInteger(v) || (v!==0 && v!==1)) return {ok:false,err:'Boolean must be 0 or 1'};
+  if(sch.type==='u8'){
+    const v=Number(rawStr); if(!Number.isInteger(v)||v<sch.min||v>sch.max) return {ok:false,err:`Range ${sch.min}-${sch.max}`};
     return {ok:true,data:new Uint8Array([v])};
-  }
-  if(sch.type==='u8' || sch.type==='u16'){
-    if(rawStr==="" ) return {ok:false,err:'Empty'};
-    if(typeof rawStr==='string' && /[^0-9\- ]/.test(rawStr.trim()) && !/^\d+$/.test(rawStr.trim())) {
-      if(isNaN(Number(rawStr))) return {ok:false,err:'Expected number'};
-    }
-    const v=Number(rawStr);
-    if(!Number.isInteger(v)) return {ok:false,err:'Must be integer'};
-    if(v<sch.min || v>sch.max) return {ok:false,err:`Range ${sch.min}-${sch.max}`};
-    if(sch.type==='u8') return {ok:true,data:new Uint8Array([v])};
-    else return {ok:true,data:u16b(v)};
   }
   if(sch.type==='enum'){
-    const v=Number(rawStr);
-    if(!sch.values.includes(v)) return {ok:false,err:`Must be one of ${sch.values.join(',')}`};
-    if(fid===33) return {ok:true,data:u16b(v)};
-    return {ok:true,data:new Uint8Array([v])};
-  }
-  if(sch.type==='combo'){
-    if(!rawStr.trim()) return {ok:true,data:new Uint8Array([])};
-    const parts=rawStr.split(',').map(s=>s.trim()).filter(s=>s!=='');
-    if(parts.length>sch.max) return {ok:false,err:`Max ${sch.max} codes`};
-    const arr=[];
-    for(const p of parts){
-      const n=Number(p);
-      if(!Number.isInteger(n) || n<0 || n>255) return {ok:false,err:`Bad code ${p} 0-255`};
-      arr.push(n);
-    }
-    return {ok:true,data:new Uint8Array(arr)};
+    const v=Number(rawStr); if(!sch.values.includes(v)) return {ok:false,err:`Must be one of ${sch.values.join(',')}`};
+    return {ok:true,data:u16b(v)};
   }
   return {ok:false,err:'Unknown type'};
 }
@@ -245,9 +125,7 @@ function updateSaveBtn(){ $("#save").textContent=`Save Changed (${dirty.size})`;
 function snapshotCurrent(){
   current={};
   for(const fid of Object.keys(SCHEMA).map(Number)){
-    const el=$("#f"+fid);
-    if(!el) continue;
-    current[fid]=el.value;
+    const el=$("#f"+fid); if(!el) continue; current[fid]=el.value;
   }
 }
 function checkDirty(){
@@ -257,16 +135,24 @@ function checkDirty(){
   }
 }
 
-async function sendWithRetry(cmd,fid,data,retries=2){
+async function sendWithRetry(cmd,fid,data,retries=3){
   for(let i=0;i<=retries;i++){
     try{
       const out=enc(cmd,fid,data);
       await dev.sendFeatureReport(RID,out);
-      await new Promise(r=>setTimeout(r,90));
+      await new Promise(r=>setTimeout(r,80));
       const raw=await dev.receiveFeatureReport(RID);
       const rr=dec(raw);
+      if(rr.rawLen!==undefined && rr.rawLen<5){
+        throw Error(`short reply ${rr.rawLen} bytes - maybe busy`);
+      }
+      if(rr.status===3){ // busy
+        log(`FID${fid} busy, retry ${i+1}`);
+        await new Promise(r=>setTimeout(r,120));
+        continue;
+      }
       if(rr.status!==0) throw Error("dev status "+rr.status);
-      if(rr.cmd!==cmd||rr.fid!==fid) log(`WARN cmd/fid mismatch got ${rr.cmd}/${rr.fid} exp ${cmd}/${fid}`);
+      if(rr.cmd!==cmd||rr.fid!==fid) log(`WARN cmd/fid mismatch got ${rr.cmd}/${rr.fid} exp ${cmd}/${fid} - but continuing`);
       return rr;
     }catch(e){
       log(`send ${cmd}/${fid} attempt ${i+1} FAIL ${e.message}`);
@@ -278,25 +164,36 @@ async function sendWithRetry(cmd,fid,data,retries=2){
 }
 
 async function connect(){
-  if(!('hid' in navigator)){setStatus("No WebHID");return}
+  if(!('hid' in navigator)){setStatus("No WebHID - use Chrome/Edge");return}
   const filters=[{vendorId:VID,productId:PID,usagePage:0xFF00},{vendorId:VID,productId:PID}];
   try{
     log("requestDevice...");
     const picked=await navigator.hid.requestDevice({filters});
-    if(!picked.length){setStatus("No device");return}
+    if(!picked.length){setStatus("No device picked");return}
     dev=picked[0];
-    log("Picked "+(dev.productName||"Cobalt")+" colls="+dev.collections.map(c=>`0x${c.usagePage.toString(16)}/0x${c.usage.toString(16)}`).join(','));
+    const colls = dev.collections.map(c=>`0x${c.usagePage.toString(16)}/0x${c.usage.toString(16)}`).join(',');
+    log("Picked "+(dev.productName||"Cobalt")+" colls="+colls);
+    if(colls && !colls.includes("ff00")){
+      log("WARNING: device only shows mouse colls, no ff00. This will cause NotAllowedError on open. Flash vendor-only firmware.");
+      setStatus("Device shows only mouse (no 0xFF00). Flash vendor-only firmware from fixed_minimal folder");
+    }
     if(dev.opened) try{await dev.close()}catch{}
     await dev.open();
-    log("Opened");
-    setStatus("Connected");
+    log("Opened OK");
+    setStatus("Connected - reading...");
     $("#connect").disabled=true;$("#disconnect").disabled=false;$("#ping").disabled=false;$("#read").disabled=false;$("#panel").style.display="block";
     setProfilesEnabled(true);
-    ensureDefaultProfile();
-    renderProfiles();
-    await new Promise(r=>setTimeout(r,320));
+    ensureDefaultProfile(); renderProfiles();
+    await new Promise(r=>setTimeout(r,250));
     await readAll();
-  }catch(e){setStatus("Failed: "+e.message);log("FAIL "+e.name+" "+e.message)}
+    setStatus("Connected - read OK");
+  }catch(e){
+    setStatus("Failed: "+e.name+" "+e.message);
+    log("FAIL "+e.name+" "+e.message);
+    if(e.name==="NotAllowedError"){
+      log("Hint: NotAllowedError = Chrome blocked open because device looks like mouse. You need vendor-only firmware (fixed_minimal) OR close other tabs using device, OR use Chrome with flag #enable-experimental-web-platform-features. Also try Forget then replug.");
+    }
+  }
 }
 
 async function readAll(){
@@ -307,21 +204,13 @@ async function readAll(){
     try{
       const r=await sendWithRetry(1,fid,new Uint8Array([]));
       let val;
-      if([96,97].includes(fid)){val=r.payload.length>=3?rgb2hex(r.payload[0],r.payload[1],r.payload[2]):"#0a5bd7"; const el=$("#f"+fid); if(el) el.value=val;}
-      else if([32,33,85].includes(fid)){val=r.payload.length>=2?b2u16(r.payload).toString():r.payload[0]?.toString()||""; const el=$("#f"+fid); if(el) el.value=val;}
-      else if(fid===116){
-        val=Array.from(r.payload).join(','); const el=$("#f"+fid); if(el) el.value=val;
-      }
-      else if([16,17,18,19,20,21,36,65,66,80,81].includes(fid) || (fid>=48&&fid<=53) || (fid>=64&&fid<=66) || (fid>=82&&fid<=84) || (fid>=99&&fid<=100) || (fid>=112&&fid<=117) || (fid>=34&&fid<=38) || fid===98 || fid===99){
-        val=r.payload[0]?.toString()||"0"; const el=$("#f"+fid); if(el){ el.value=val; if(fid===98) $("#f98v").textContent=val; }
-      }
-      else{
-        val=b2str(r.payload); const el=$("#f"+fid); if(el) el.value=val;
-      }
+      if([96,97].includes(fid)){ val=r.payload.length>=3?rgb2hex(r.payload[0],r.payload[1],r.payload[2]):"#0a5bd7"; const el=$("#f"+fid); if(el) el.value=val; }
+      else if([33].includes(fid)){ val=r.payload.length>=2?b2u16(r.payload).toString():r.payload[0]?.toString()||""; const el=$("#f"+fid); if(el) el.value=val; }
+      else { val=b2str(r.payload); const el=$("#f"+fid); if(el) el.value=val; }
       baseline[fid]=val;
       log(`Read FID${fid} OK = ${val}`);
     }catch(e){log(`Read FID${fid} FAIL ${e.message}`)}
-    await new Promise(r=>setTimeout(r,45));
+    await new Promise(r=>setTimeout(r,40));
   }
   snapshotCurrent();checkDirty();updateSaveBtn();
 }
@@ -331,47 +220,28 @@ async function saveDirty(){
   if(dirty.size===0){log("Nothing changed");return}
   log(`Saving ${dirty.size} changed: ${Array.from(dirty).join(',')}`);
   for(const fid of Array.from(dirty)){
-    const raw=getVal("f"+fid);
+    const raw=document.getElementById("f"+fid)?.value ?? "";
     const v=validate(fid,raw);
-    if(!v.ok){ log(`Validate FID${fid} FAIL ${v.err} — skipping`); setStatus(`FID${fid} invalid: ${v.err}`); continue; }
+    if(!v.ok){ log(`Validate FID${fid} FAIL ${v.err}`); setStatus(`FID${fid} invalid: ${v.err}`); continue; }
     try{
       const r=await sendWithRetry(2,fid,v.data);
       log(`Saved FID${fid} OK`);
       baseline[fid]=current[fid];
       setDirty(fid,false);
     }catch(e){log(`Save FID${fid} FAIL ${e.message}`)}
-    await new Promise(r=>setTimeout(r,70));
+    await new Promise(r=>setTimeout(r,60));
   }
   updateSaveBtn();
 }
 
-// Tabs
-document.querySelectorAll('.tab').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const t=btn.dataset.tab;
-    document.querySelectorAll('.tabContent').forEach(c=>c.classList.add('hidden'));
-    $("#tab-"+t).classList.remove('hidden');
-  });
-});
-
 // Profiles
-function loadProfiles(){
-  try{
-    const raw=localStorage.getItem('cobalt_profiles');
-    return raw?JSON.parse(raw):[];
-  }catch{return []}
-}
+function loadProfiles(){ try{ const raw=localStorage.getItem('cobalt_profiles'); return raw?JSON.parse(raw):[]; }catch{return []} }
 function saveProfiles(arr){ localStorage.setItem('cobalt_profiles', JSON.stringify(arr)); }
 function renderProfiles(){
-  const list=loadProfiles();
-  const container=$("#profileList");
-  container.innerHTML="";
+  const list=loadProfiles(); const container=$("#profileList"); container.innerHTML="";
   if(list.length===0){ container.innerHTML='<p class="muted">No profiles yet — default will be created on connect.</p>'; return; }
   list.forEach(p=>{
-    const div=document.createElement('div');
-    div.className='profile';
+    const div=document.createElement('div'); div.className='profile';
     const letter=(p.name||'?')[0].toUpperCase();
     div.innerHTML=`<div class="icon" style="background:${p.color}">${letter}</div><div class="profileInfo"><div class="profileName">${p.name}<span class="badge">${Object.keys(p.data||{}).length} fields</span></div><div class="profileMeta">${new Date(p.created).toLocaleString()}</div></div><button data-act="load" data-id="${p.id}">Load</button><button data-act="delete" data-id="${p.id}" class="secondary">Delete</button>`;
     container.appendChild(div);
@@ -379,120 +249,53 @@ function renderProfiles(){
   container.querySelectorAll('button').forEach(b=>{
     b.onclick=()=>{
       if(!dev){ setStatus("Connect mouse first"); return; }
-      const id=b.dataset.id;
-      const act=b.dataset.act;
-      const profiles=loadProfiles();
-      const prof=profiles.find(x=>x.id===id);
-      if(!prof) return;
+      const id=b.dataset.id; const act=b.dataset.act;
+      const profiles=loadProfiles(); const prof=profiles.find(x=>x.id===id); if(!prof) return;
       if(act==='load'){
-        for(const [fid,val] of Object.entries(prof.data)){
-          const el=$("#f"+fid);
-          if(el){ el.value=val; }
-        }
-        snapshotCurrent();checkDirty();
-        log(`Loaded profile ${prof.name}`);
-        setStatus(`Loaded profile ${prof.name} — press Save Changed`);
+        for(const [fid,val] of Object.entries(prof.data)){ const el=$("#f"+fid); if(el) el.value=val; }
+        snapshotCurrent();checkDirty(); log(`Loaded profile ${prof.name}`); setStatus(`Loaded profile ${prof.name} — press Save Changed`);
       }else if(act==='delete'){
-        if(!dev){ setStatus("Connect mouse first"); return; }
         if(!confirm(`Delete ${prof.name}?`)) return;
-        const filtered=profiles.filter(x=>x.id!==id);
-        saveProfiles(filtered);
-        renderProfiles();
+        saveProfiles(profiles.filter(x=>x.id!==id)); renderProfiles();
       }
     }
   });
 }
-
 function setProfilesEnabled(enabled){
-  const box=$("#profilesBox");
-  if(box){ box.style.opacity=enabled?"1":"0.45"; box.style.pointerEvents=enabled?"auto":"none"; }
-  const btns=["createProfile","exportProfiles","importProfiles"];
-  btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=!enabled; });
-  if(!enabled){
-    const list=$("#profileList");
-    if(list && loadProfiles().length===0) list.innerHTML='<p class="muted">Connect mouse to manage profiles — default profile exists in localStorage.</p>';
-  }
+  const box=$("#profilesBox"); if(box){ box.style.opacity=enabled?"1":"0.45"; box.style.pointerEvents=enabled?"auto":"none"; }
+  ["createProfile","exportProfiles","importProfiles"].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=!enabled; });
 }
-
 function ensureDefaultProfile(){
-  let profiles=loadProfiles();
-  if(profiles.length===0){
-    const defData={};
-    for(const fid of Object.keys(SCHEMA).map(Number)){
-      const el=document.getElementById("f"+fid);
-      if(el) defData[fid]=el.value||"0";
-    }
-    defData[1]="Cobalt-X Zero"; defData[32]="800"; defData[33]="1000"; defData[96]="#0a5bd7"; defData[97]="#ff3333"; defData[98]="128"; defData[65]="1";
-    const id="default";
-    profiles=[{id,name:"Default",color:"#0a5bd7",data:defData,created:new Date().toISOString()}];
-    saveProfiles(profiles);
-    log("Created default profile");
+  let profiles=loadProfiles(); if(profiles.length===0){
+    const defData={}; for(const fid of Object.keys(SCHEMA).map(Number)){ const el=document.getElementById("f"+fid); if(el) defData[fid]=el.value||"0"; }
+    defData[1]="Cobalt-X Zero"; defData[2]="Synarix"; defData[33]="1000"; defData[96]="#0a5bd7"; defData[97]="#ff3333"; defData[98]="128";
+    profiles=[{id:"default",name:"Default",color:"#0a5bd7",data:defData,created:new Date().toISOString()}];
+    saveProfiles(profiles); log("Created default profile");
   }
 }
-
 $("#createProfile").onclick=()=>{
   if(!dev){ setStatus("Connect mouse first"); return; }
-  const name=$("#newProfileName").value.trim();
-  const color=$("#newProfileColor").value;
+  const name=$("#newProfileName").value.trim(); const color=$("#newProfileColor").value;
   if(!name){ setStatus("Profile name required"); return; }
-  if(name.length>20){ setStatus("Name too long"); return; }
-  snapshotCurrent();
-  const data={};
-  for(const fid of Object.keys(SCHEMA).map(Number)){
-    const raw=current[fid];
-    if(raw===undefined) continue;
-    const v=validate(fid,raw);
-    if(!v.ok){ setStatus(`Cannot save profile — FID${fid} invalid: ${v.err}`); log(`Profile save blocked FID${fid} ${v.err}`); return; }
-    data[fid]=raw;
-  }
-  const profiles=loadProfiles();
-  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  profiles.push({id,name,color,data,created:new Date().toISOString()});
-  saveProfiles(profiles);
-  $("#newProfileName").value="";
-  renderProfiles();
-  log(`Saved profile ${name}`);
-}
-
+  snapshotCurrent(); const data={}; for(const fid of Object.keys(SCHEMA).map(Number)){ const raw=current[fid]; if(raw===undefined) continue; const v=validate(fid,raw); if(!v.ok){ setStatus(`Cannot save profile — FID${fid} invalid: ${v.err}`); return; } data[fid]=raw; }
+  const profiles=loadProfiles(); const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  profiles.push({id,name,color,data,created:new Date().toISOString()}); saveProfiles(profiles); $("#newProfileName").value=""; renderProfiles(); log(`Saved profile ${name}`);
+};
 $("#exportProfiles").onclick=()=>{
-  if(!dev){ setStatus("Connect mouse first"); return; }
-  const data=JSON.stringify(loadProfiles(),null,2);
-  const blob=new Blob([data],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='cobalt_profiles.json';a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-$("#importProfiles").onclick=()=>{ if(!dev){ setStatus("Connect mouse first"); return; } $("#importFile").click(); }
+  const data=JSON.stringify(loadProfiles(),null,2); const blob=new Blob([data],{type:'application/json'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='cobalt_profiles.json';a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+$("#importProfiles").onclick=()=>$("#importFile").click();
 $("#importFile").addEventListener('change',async e=>{
   const f=e.target.files[0]; if(!f) return;
-  try{
-    const txt=await f.text();
-    const arr=JSON.parse(txt);
-    if(!Array.isArray(arr)) throw Error('Not array');
-    for(const p of arr){
-      if(!p.name||!p.color||!p.data) throw Error('Bad profile structure');
-      if(typeof p.name!=='string' || p.name.length>20) throw Error('Bad name');
-      if(!/^#[0-9a-fA-F]{6}$/.test(p.color)) throw Error('Bad color');
-    }
-    saveProfiles(arr);
-    renderProfiles();
-    log('Imported '+arr.length+' profiles');
-  }catch(err){ setStatus('Import failed: '+err.message); log('Import FAIL '+err.message); }
+  try{ const txt=await f.text(); const arr=JSON.parse(txt); if(!Array.isArray(arr)) throw Error('Not array'); saveProfiles(arr); renderProfiles(); log('Imported '+arr.length+' profiles'); }catch(err){ setStatus('Import failed: '+err.message); }
   e.target.value="";
 });
 
 document.getElementById("connect").onclick=connect;
 document.getElementById("disconnect").onclick=async()=>{
-  try{if(dev) await dev.close()}catch{}
-  dev=null;
-  setStatus("Disconnected");
-  $("#connect").disabled=false;
-  $("#disconnect").disabled=true;
-  $("#ping").disabled=true;
-  $("#read").disabled=true;
-  $("#panel").style.display="none";
-  setProfilesEnabled(false);
-  renderProfiles();
+  try{if(dev) await dev.close()}catch{} dev=null; setStatus("Disconnected");
+  $("#connect").disabled=false; $("#disconnect").disabled=true; $("#ping").disabled=true; $("#read").disabled=true; $("#panel").style.display="none"; setProfilesEnabled(false); renderProfiles();
 };
 document.getElementById("forget").onclick=async()=>{try{const ds=await navigator.hid.getDevices();for(const d of ds){if(d.vendorId===VID&&d.productId===PID){try{await d.forget();log("Forgot "+d.productName)}catch{}}}log("Forgot done replug")}catch(e){log(e.message)}};
 document.getElementById("ping").onclick=async()=>{try{const r=await sendWithRetry(5,0,new Uint8Array([]));log("Ping OK "+Array.from(r.payload).map(b=>b.toString(16)).join(' '))}catch(e){log("Ping FAIL "+e.message)}};
@@ -501,14 +304,11 @@ document.getElementById("save").onclick=saveDirty;
 document.getElementById("reset").onclick=async()=>{if(!confirm("Factory reset?"))return;try{await sendWithRetry(4,0,new Uint8Array([]));log("Reset OK");await readAll()}catch(e){log("Reset FAIL "+e.message)}};
 
 Object.keys(SCHEMA).forEach(fid=>{
-  const el=document.getElementById("f"+fid);
-  if(!el) return;
-  el.addEventListener("input",()=>{snapshotCurrent();checkDirty(); if(fid==98) $("#f98v").textContent=el.value;});
+  const el=document.getElementById("f"+fid); if(!el) return;
+  el.addEventListener("input",()=>{snapshotCurrent();checkDirty();});
   el.addEventListener("change",()=>{snapshotCurrent();checkDirty();});
 });
 
-log("Ready. Connect, it will read all FIDs. Profiles are validated and stored in localStorage with icon = first letter + color.");
-ensureDefaultProfile();
-setProfilesEnabled(false);
-renderProfiles();
+log("Ready. Minimal build - connect with vendor-only firmware.");
+ensureDefaultProfile(); setProfilesEnabled(false); renderProfiles();
 </script></body></html>
