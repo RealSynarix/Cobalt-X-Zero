@@ -1,0 +1,75 @@
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Cobalt-X Zero</title><style>*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#0a0a0a;color:#eee;padding:20px}.card{border:1px solid #222;background:#111;border-radius:12px;padding:16px;max-width:700px;margin:0 auto}button{padding:10px 14px;border:0;border-radius:8px;background:#eee;color:#111;font-weight:700;cursor:pointer;margin:4px 4px 0 0}button:disabled{opacity:.4}input,select{width:100%;padding:8px;border:1px solid #333;background:#000;color:#eee;border-radius:6px;margin-top:4px}label{font-size:12px;font-weight:600;display:block;margin-top:10px}#status{margin-top:10px;font-size:12px;white-space:pre-wrap;color:#f88}#log{background:#000;color:#0f0;padding:10px;border-radius:8px;min-height:120px;font-family:monospace;font-size:11px;overflow:auto;margin-top:10px;border:1px solid #222}.muted{font-size:11px;color:#888}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}</style></head><body><div class="card"><h2 style="margin:0">Cobalt-X Zero</h2><p class="muted">VID 0x1209 PID 0xC0BA RID2 - Only vendor filter</p><button id="connect">Connect / Pair</button><button id="forget">Forget All Paired</button><button id="disconnect" disabled>Disconnect</button><button id="ping" disabled>Ping</button><div id="status">Ready. If it says Failed to open: go to chrome://settings/content/hidDevices and Forget, replug mouse, try again. On Linux Flatpak use native Chrome.</div><pre id="log"></pre><div id="panel" style="display:none"><h3>RW Test</h3><div class="grid"><label>Name (1)<input id="f1" maxlength="31"/></label><label>Serial (3)<input id="f3" maxlength="15"/></label><label>DPI (32)<input id="f32" type="number" min="100" max="32000"/></label><label>Poll (33)<select id="f33"><option>125</option><option>250</option><option>500</option><option selected>1000</option><option>2000</option><option>4000</option><option>8000</option></select></label><label>LED Enable (20)<select id="f20"><option value="0">Off</option><option value="1" selected>On</option></select></label><label>Bri (98)<input id="f98" type="number" min="0" max="255" value="128"/></label><label>Color (96)<input id="f96" type="color" value="#0a5bd7"/></label></div><div style="margin-top:10px"><button id="read">Read</button><button id="save">Save</button><button id="reset">Reset</button></div></div></div><script>
+const VID=0x1209,PID=0xC0BA,RID=2;
+let dev=null;
+const $=s=>document.querySelector(s);
+const logEl=$("#log"),statusEl=$("#status");
+function log(m){logEl.textContent+=m+"\n";logEl.scrollTop=logEl.scrollHeight;console.log(m)}
+function setStatus(m){statusEl.textContent=m}
+function enc(cmd,fid,data){const b=new Uint8Array(64);b[0]=cmd;b[1]=fid;b[2]=data.length&255;b[3]=data.length>>8;b.set(data,4);return b}
+function dec(raw){const d=raw instanceof Uint8Array?raw:new Uint8Array(raw);return{cmd:d[0],fid:d[1],len:d[2]|d[3]<<8,status:d[4],payload:d.slice(5,5+(d[2]|d[3]<<8))}}
+function str2b(s){return new TextEncoder().encode(s)}
+function b2str(b){try{return new TextDecoder().decode(b).replace(/\0+$/,'')}catch{return""}}
+function u16b(v){return new Uint8Array([v&255,v>>8])}
+function b2u16(b){return b[0]|b[1]<<8}
+function hex2rgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function rgb2hex(r,g,b){return"#"+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function send(cmd,fid,data){
+  if(!dev) throw Error("Not connected");
+  const out=enc(cmd,fid,data);
+  await dev.sendFeatureReport(RID,out);
+  await new Promise(r=>setTimeout(r,80));
+  const raw=await dev.receiveFeatureReport(RID);
+  const rr=dec(raw);
+  if(rr.status!==0) throw Error("Device status "+rr.status);
+  return rr;
+}
+async function tryOpen(d){
+  try{if(d.opened){log("Already opened, closing first...");await d.close();}}catch{}
+  await d.open();
+  return d;
+}
+async function connect(){
+  if(!('hid' in navigator)){setStatus("No WebHID");return}
+  log("Requesting with ONLY vendor filter (0xFF00)...");
+  const filters=[{vendorId:VID,productId:PID,usagePage:0xFF00,usage:0x00},{vendorId:VID,productId:PID,usagePage:0xFF00}];
+  try{
+    let devs=[];
+    try{devs=await navigator.hid.getDevices();}catch{}
+    let existing=devs.find(d=>d.vendorId===VID&&d.productId===PID);
+    if(existing){log("Found already paired: "+(existing.productName||"Cobalt")+" trying open...");try{dev=await tryOpen(existing);log("Opened from getDevices()");setStatus("Connected via getDevices");onConnected();return}catch(e){log("getDevices open failed: "+e.message+" will requestDevice");}}
+    const picked=await navigator.hid.requestDevice({filters});
+    if(!picked.length){setStatus("No device picked");return}
+    dev=picked[0];
+    log("Picked "+(dev.productName||"Cobalt")+" collections: "+dev.collections.map(c=>`0x${c.usagePage.toString(16)}:0x${c.usage.toString(16)}`).join(', '));
+    log("Opening...");
+    await tryOpen(dev);
+    log("Opened OK");
+    setStatus("Connected: "+(dev.productName||"Cobalt"));
+    onConnected();
+    try{const p=await send(5,0,new Uint8Array([]));log("Ping OK "+Array.from(p.payload).map(b=>b.toString(16)).join(' '))}catch(e){log("Ping fail "+e.message)}
+  }catch(e){
+    setStatus("Failed to open: "+e.message);
+    log("FAIL "+e.name+" "+e.message+"\nSteps:\n1. chrome://settings/content/hidDevices -> Forget Cobalt\n2. Unplug/replug\n3. Close other tabs using HID\n4. On Linux: native Chrome not Flatpak + udev rule\n5. On Windows: Device Manager should show mouse + HID-compliant vendor-defined device");
+  }
+}
+function onConnected(){$("#connect").disabled=true;$("#disconnect").disabled=false;$("#ping").disabled=false;$("#panel").style.display="block";}
+async function disconnect(){try{if(dev)await dev.close()}catch{}dev=null;setStatus("Disconnected");$("#connect").disabled=false;$("#disconnect").disabled=true;$("#ping").disabled=true;$("#panel").style.display="none"}
+async function readAll(){
+  for(const [fid,id] of [[1,"f1"],[3,"f3"],[32,"f32"],[33,"f33"],[20,"f20"],[98,"f98"]]){
+    try{const r=await send(1,fid,new Uint8Array([]));const el=$("#"+id);if(fid===32||fid===33)el.value=r.payload.length===2?b2u16(r.payload):r.payload[0];else if([20,98].includes(fid))el.value=r.payload[0];else el.value=b2str(r.payload);log("Read "+fid+" OK")}catch(e){log("Read "+fid+" fail "+e.message)}
+  }
+  try{const r=await send(1,96,new Uint8Array([]));if(r.payload.length>=3){$("#f96").value=rgb2hex(r.payload[0],r.payload[1],r.payload[2]);log("Read 96 OK "+$("#f96").value)}}catch(e){log("Read 96 fail "+e.message)}
+}
+async function saveAll(){
+  const writes=[[1,str2b($("#f1").value)],[3,str2b($("#f3").value)],[32,u16b(parseInt($("#f32").value)||800)],[33,u16b(parseInt($("#f33").value)||1000)],[20,new Uint8Array([parseInt($("#f20").value)||1])],[98,new Uint8Array([parseInt($("#f98").value)||128])],[96,new Uint8Array(hex2rgb($("#f96").value))]];
+  for(const [fid,data] of writes){try{await send(2,fid,data);log("Saved "+fid)}catch(e){log("Save "+fid+" fail "+e.message)}}
+}
+$("#connect").onclick=connect;
+$("#disconnect").onclick=disconnect;
+$("#forget").onclick=async()=>{try{const devs=await navigator.hid.getDevices();for(const d of devs){if(d.vendorId===VID&&d.productId===PID){try{await d.forget();log("Forgot "+d.productName)}catch(e){log("Forget fail "+e.message)}}}log("Done forget, now replug and Connect again")}catch(e){log(e.message)}};
+$("#ping").onclick=async()=>{try{const r=await send(5,0,new Uint8Array([]));log("Ping "+Array.from(r.payload).join(','))}catch(e){log(e.message)}};
+$("#read").onclick=readAll;
+$("#save").onclick=saveAll;
+$("#reset").onclick=async()=>{if(!confirm("Reset?"))return;try{await send(4,0,new Uint8Array([]));log("Reset OK");await readAll()}catch(e){log(e.message)}};
+log("Ready. Use Connect. If it shows Cobalt in picker but fails to open, forget it in settings and try again.");
+</script></body></html>
