@@ -1,1 +1,0 @@
-export function copyInstructions(){return "Hold DFU + plug";}

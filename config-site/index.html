@@ -1,53 +1,153 @@
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Cobalt-X Zero</title><link rel="stylesheet" href="css/style.css"/></head>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cobalt-X Zero - Minimal Config</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#f6f6f6;color:#111;padding:20px}
+.card{border:1px solid #ddd;background:#fff;border-radius:12px;padding:16px;max-width:600px;margin:0 auto}
+button{padding:10px 14px;border:0;border-radius:8px;background:#111;color:#fff;font-weight:700;cursor:pointer;margin:4px 4px 0 0}
+button:disabled{opacity:.4}
+input,select{width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-top:4px}
+label{font-size:12px;font-weight:600;display:block;margin-top:10px}
+#status{margin-top:10px;font-size:12px;white-space:pre-wrap;color:#c00}
+#log{background:#0a0a0a;color:#0f0;padding:10px;border-radius:8px;min-height:100px;font-family:monospace;font-size:11px;overflow:auto;margin-top:10px}
+.muted{font-size:11px;color:#666}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
 <body>
-<div id="connect-page">
 <div class="card">
-<h1 style="margin:0 0 10px;font-size:18px">Cobalt-X Zero</h1>
-<button id="connect-btn" class="connect-btn">Connect</button>
-<div id="connect-status" class="status"></div>
-<div class="meta"><span>VID 0x1209</span><span>PID 0xC0BA</span><span>RID 2</span></div>
-<div class="row" style="justify-content:center;margin-top:8px">
-<button id="list-paired-btn" class="btn">List Paired</button>
-<button id="forget-btn" class="btn">Forget All</button>
+<h2 style="margin:0 0 8px">Cobalt-X Zero</h2>
+<p class="muted">Minimal WebHID configurator - bare minimum to test connection. For any Cobalt-X Zero owner.</p>
+
+<button id="connect">Connect Cobalt-X Zero</button>
+<button id="disconnect" disabled>Disconnect</button>
+<button id="ping" disabled>Ping</button>
+<div id="status">Disconnected. Plug in your Cobalt-X Zero and click Connect.</div>
+<pre id="log"></pre>
+
+<div id="panel" style="display:none">
+<h3>Config (bare minimum)</h3>
+<div class="grid">
+<label>Device Name (FID 1)<input id="f1" maxlength="31"/></label>
+<label>Serial (FID 3)<input id="f3" maxlength="15"/></label>
+<label>DPI (FID 32)<input id="f32" type="number" min="100" max="32000"/></label>
+<label>Polling (FID 33)
+<select id="f33"><option>125</option><option>250</option><option>500</option><option selected>1000</option><option>2000</option><option>4000</option><option>8000</option></select>
+</label>
+<label>LOD mm (FID 34)<input id="f34" type="number" min="1" max="3"/></label>
+<label>LED Brightness (FID 98)<input id="f98" type="number" min="0" max="255"/></label>
 </div>
-<div id="paired-list" class="muted" style="margin-top:6px;word-break:break-all"></div>
-<div id="linux-help" class="muted" style="margin-top:8px;text-align:left;display:none">Linux: create /etc/udev/rules.d/99-cobalt.rules with:
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="c0ba", MODE="0666"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="c0ba", MODE="0666"
-Then: sudo udevadm control --reload-rules && sudo udevadm trigger
-Unplug/replug. Chrome blocks standard mice from WebHID. Firmware must expose 0xFF00 vendor page or it will be protected.
-</div>
+<div style="margin-top:12px">
+<button id="read">Read All</button>
+<button id="save">Save All</button>
+<button id="reset">Reset Defaults</button>
 </div>
 </div>
 
-<div id="app-page" class="hidden">
-<div class="topbar"><div><strong>Cobalt-X Zero</strong> <span id="device-state" class="muted"></span></div>
-<nav id="tabs" class="tabs">
-<button data-tab="profiles" class="tab active">Profiles</button>
-<button data-tab="identity" class="tab">Identity</button>
-<button data-tab="modules" class="tab">Modules</button>
-<button data-tab="sensor" class="tab">Sensor</button>
-<button data-tab="buttons" class="tab">Buttons</button>
-<button data-tab="wheel" class="tab">Wheel</button>
-<button data-tab="hyprx" class="tab">HyprX</button>
-<button data-tab="leds" class="tab">LEDs</button>
-<button data-tab="pb7" class="tab">PB7</button>
-<button data-tab="flash" class="tab">Flash</button>
-</nav></div>
-<main class="views">
-<section id="view-profiles" class="view active"><div class="grid-2"><div class="card2"><label>Save snapshot</label><div class="row"><input id="profile-name" maxlength="32" placeholder="name"/><button id="profile-save" class="btn">Save</button></div><div class="muted">Saves all fields to localStorage</div></div><div class="card2"><label>Active</label><div class="row"><select id="profile-active"></select><button id="profile-load" class="btn">Load</button><button id="profile-delete" class="btn">Delete</button></div><div id="profile-list"></div></div></div></section>
-<section id="view-identity" class="view"><div class="grid-2"><div class="card2"><label>Device name (ro)</label><input id="f-device_name" data-field="1" readonly/></div><div class="card2"><label>Manufacturer (ro)</label><input id="f-manufacturer" data-field="2" readonly/></div><div class="card2"><label>Serial (ro)</label><input id="f-serial" data-field="3" readonly/></div><div class="card2"><label>Firmware (ro)</label><input id="f-fw" data-field="4" readonly/></div><div class="card2"><label>VID/PID</label><div class="row"><input id="f-vid" readonly/><input id="f-pid" readonly/></div></div></div></section>
-<section id="view-modules" class="view"><div class="grid-2"><div class="card2"><label><input id="f-mod_sensor" data-field="16" type="checkbox"/> Sensor</label><div class="muted">Stored only, no hardware effect</div></div><div class="card2"><label><input id="f-mod_buttons" data-field="17" type="checkbox" checked/> Buttons</label><div class="muted">Enable PB3-7</div></div><div class="card2"><label><input id="f-mod_scroll" data-field="18" type="checkbox" checked/> Scroll</label><div class="muted">Wheel encoder</div></div><div class="card2"><label><input id="f-mod_hyprx" data-field="19" type="checkbox"/> HyprX</label><div class="muted">Scroll to click</div></div><div class="card2"><label><input id="f-mod_leds" data-field="20" type="checkbox" checked/> LEDs</label><div class="muted">Effects</div></div><div class="card2"><label><input id="f-mod_sof" data-field="21" type="checkbox" checked/> SOF sync</label><div class="muted">USB SOF sync</div></div></div></section>
-<section id="view-sensor" class="view"><div class="grid-2"><div class="card2"><label>DPI 100-32000</label><input id="f-dpi" data-field="32" type="number" min="100" max="32000" value="800"/><div class="muted">Stored, no-op</div></div><div class="card2"><label>Polling</label><select id="f-poll" data-field="33"><option value="125">125</option><option value="250">250</option><option value="500">500</option><option value="1000" selected>1000</option><option value="2000">2000</option><option value="4000">4000</option><option value="8000">8000</option></select><div class="muted">Stored, no-op</div></div><div class="card2"><label>LOD mm 1-3</label><input id="f-lod_mm" data-field="34" type="number" min="1" max="3" value="2"/><div class="muted">Stored, no-op</div></div><div class="card2"><label>LOD SQUAL 10-200</label><input id="f-lod_squal" data-field="35" type="number" min="10" max="200" value="80"/><div class="muted">Stored, no-op</div></div><div class="card2"><label><input id="f-angle_snap" data-field="36" type="checkbox"/> Angle snap</label><div class="muted">Stored, no-op</div></div><div class="card2"><label>Angle strength 0-100</label><input id="f-angle_strength" data-field="37" type="number" min="0" max="100" value="0"/><div class="muted">Stored, no-op</div></div><div class="card2"><label>Surface 0-3</label><select id="f-surface" data-field="38"><option value="0">Control</option><option value="1">Speed</option><option value="2">Hard</option><option value="3">Glass</option></select><div class="muted">Stored, no-op</div></div></div></section>
-<section id="view-buttons" class="view"><div class="grid-2"><div class="card2"><label>PB3 debounce 0-20</label><input data-field="48" id="f-db_pb3" type="number" min="0" max="20" value="4"/><div class="muted">Left click filter</div></div><div class="card2"><label>PB4 debounce 0-20</label><input data-field="49" id="f-db_pb4" type="number" min="0" max="20" value="4"/><div class="muted">Right click filter</div></div><div class="card2"><label>PB5 debounce 0-20</label><input data-field="50" id="f-db_pb5" type="number" min="0" max="20" value="4"/><div class="muted">Middle click filter</div></div><div class="card2"><label>PB6 debounce 0-20</label><input data-field="51" id="f-db_pb6" type="number" min="0" max="20" value="4"/><div class="muted">Macro1 filter</div></div><div class="card2"><label>PB7 debounce 0-20</label><input data-field="52" id="f-db_pb7" type="number" min="0" max="20" value="8"/><div class="muted">PB7 filter</div></div><div class="card2"><label>Click mode 0-2</label><select data-field="53" id="f-click_mode"><option value="0">Standard</option><option value="1">Speed</option><option value="2">Competition</option></select><div class="muted">Click latency logic</div></div></div></section>
-<section id="view-wheel" class="view"><div class="grid-2"><div class="card2"><label>Wheel divider 1-8</label><input data-field="64" id="f-wheel_div" type="number" min="1" max="8" value="1"/><div class="muted">Ticks per scroll</div></div><div class="card2"><label><input data-field="65" id="f-wheel_inv" type="checkbox"/> Invert</label><div class="muted">Reverse scroll</div></div><div class="card2"><label><input data-field="66" id="f-wheel_smooth" type="checkbox" checked/> Smooth</label><div class="muted">Smooth steps</div></div></div></section>
-<section id="view-hyprx" class="view"><div class="grid-2"><div class="card2"><label><input data-field="80" id="f-hyprx_en" type="checkbox"/> Enable HyprX</label><div class="muted">Scroll to clicks</div></div><div class="card2"><label><input data-field="81" id="f-hyprx_led" type="checkbox"/> LED on trigger</label><div class="muted">LED changes when triggers</div></div><div class="card2"><label>Target 0=PB4 1=PB5</label><input data-field="82" id="f-hyprx_target" type="number" min="0" max="1" value="0"/><div class="muted">Which button to click</div></div><div class="card2"><label>Scroll to click 1-24</label><input data-field="83" id="f-hyprx_stc" type="number" min="1" max="24" value="4"/><div class="muted">Scroll needed per click</div></div><div class="card2"><label>Divider 1-4</label><input data-field="84" id="f-hyprx_div" type="number" min="1" max="4" value="1"/><div class="muted">Divides accumulated scroll</div></div><div class="card2"><label>Hold ms 0-500</label><input data-field="85" id="f-hyprx_hold" type="number" min="0" max="500" value="40"/><div class="muted">Synthetic click hold time</div></div></div></section>
-<section id="view-leds" class="view"><div class="grid-2"><div class="card2"><label>Default color</label><input data-field="96" id="f-led_def" type="color" value="#0a5bd7"/><div class="muted">Idle color</div></div><div class="card2"><label>Macro color</label><input data-field="97" id="f-led_macro" type="color" value="#ffffff"/><div class="muted">Macro active color</div></div><div class="card2"><label>Brightness 0-255</label><input data-field="98" id="f-led_bri" type="range" min="0" max="255" value="128"/><div class="muted">PWM duty</div></div><div class="card2"><label>Effect 0-4</label><select data-field="99" id="f-led_eff"><option value="0">Solid</option><option value="1">Breath</option><option value="2">Rainbow</option><option value="3">Reactive</option><option value="4">Off</option></select><div class="muted">Animation mode</div></div><div class="card2"><label>Speed 0-255</label><input data-field="100" id="f-led_speed" type="range" min="0" max="255" value="100"/><div class="muted">Effect speed</div></div></div></section>
-<section id="view-pb7" class="view"><div class="grid-2"><div class="card2"><label>PB7 Mode 0-2</label><select data-field="112" id="f-pb7_mode"><option value="0">Normal</option><option value="1">Macro</option><option value="2">Layer</option></select><div class="muted">PB7 behavior</div></div><div class="card2"><label>Action type 0-3</label><select data-field="113" id="f-pb7_at"><option value="0">Mouse</option><option value="1">Key</option><option value="2">Combo</option><option value="3">Media</option></select><div class="muted">What it triggers</div></div><div class="card2"><label>Mouse button 0-7</label><input data-field="114" id="f-pb7_mouse" type="number" min="0" max="7" value="0"/><div class="muted">If Mouse</div></div><div class="card2"><label>Key code 0-255</label><input data-field="115" id="f-pb7_key" type="number" min="0" max="255" value="0"/><div class="muted">If Key</div></div><div class="card2"><label>Combo CSV</label><input data-field="116" id="f-pb7_combo" type="text" placeholder="224,4"/><div class="muted">Modifiers+key e.g. Ctrl+A</div></div><div class="card2"><label>Media 0-12</label><input data-field="117" id="f-pb7_media" type="number" min="0" max="12" value="0"/><div class="muted">If Media</div></div></div></section>
-<section id="view-flash" class="view"><div class="card2"><label>Flash</label><div class="muted">Hold DFU, plug, drive COBALT-DFU, drag .bin, unplug. Chrome HTTPS or localhost:8000 only.</div></div></section>
-</main>
-<div id="apply-bar" class="apply-bar"><div class="row"><div class="progress"><div class="progress-fill"></div></div><span id="apply-text" class="muted">Ready</span></div><div class="row"><button id="apply-read" class="btn">Read</button><button id="apply-all" class="btn" style="background:#111;color:#fff">Apply all</button></div></div>
+<p class="muted" style="margin-top:12px">VID 0x1209 PID 0xC0BA Report ID 2 Usage 0xFF00 - Requires Chrome/Edge desktop</p>
 </div>
-<script type="module" src="js/app.js"></script>
-</body></html>
+
+<script>
+const VID=0x1209,PID=0xC0BA,RID=2;
+let dev=null;
+const $=s=>document.querySelector(s);
+const logEl=$("#log"),statusEl=$("#status");
+function log(m){logEl.textContent+=m+"\n";logEl.scrollTop=logEl.scrollHeight}
+function setStatus(m){statusEl.textContent=m}
+function enc(cmd,fid,data){const b=new Uint8Array(64);b[0]=cmd;b[1]=fid;b[2]=data.length&255;b[3]=data.length>>8;b.set(data,4);return b}
+function dec(raw){const d=raw instanceof Uint8Array?raw:new Uint8Array(raw);let o=d[0]===RID?1:0;return{cmd:d[o],fid:d[o+1],len:d[o+2]|d[o+3]<<8,status:d[o+4],payload:d.slice(o+5,o+5+(d[o+2]|d[o+3]<<8))}}
+function str2b(s){return new TextEncoder().encode(s)}
+function b2str(b){try{return new TextDecoder().decode(b).replace(/\0+$/,'')}catch{return""}}
+function u16b(v){return new Uint8Array([v&255,v>>8])}
+function b2u16(b){return b[0]|b[1]<<8}
+
+async function send(cmd,fid,data){
+  if(!dev) throw Error("Not connected");
+  const out=enc(cmd,fid,data);
+  await dev.sendFeatureReport(RID,out);
+  await new Promise(r=>setTimeout(r,80));
+  const raw=await dev.receiveFeatureReport(RID);
+  const r=dec(raw);
+  if(r.status!==0) throw Error("Device error "+r.status+" on fid "+fid);
+  return r;
+}
+
+async function connect(){
+  if(!('hid' in navigator)){setStatus("WebHID not supported - use Chrome/Edge desktop");return}
+  log("Requesting device...");
+  // Bare minimum filters - will show any Cobalt-X Zero
+  const filters=[
+    {vendorId:VID,productId:PID,usagePage:0xFF00,usage:0},
+    {vendorId:VID,productId:PID,usagePage:0xFF00},
+    {vendorId:VID,productId:PID},
+    {usagePage:0xFF00}
+  ];
+  try{
+    const devs=await navigator.hid.requestDevice({filters});
+    if(!devs.length){setStatus("No device selected. Make sure your Cobalt-X Zero is plugged in directly, not via hub, and not used by another app.");log("No compatible devices found. Troubleshooting:\n- Check Device Manager: should be 'HID-compliant vendor-defined device'\n- Unplug/replug\n- Close other config tabs\n- Use Chrome/Edge");return}
+    dev=devs[0];
+    await dev.open();
+    setStatus("Connected to "+(dev.productName||"Cobalt-X Zero"));
+    log("Opened: "+dev.productName);
+    $("#connect").disabled=true;$("#disconnect").disabled=false;$("#ping").disabled=false;
+    $("#panel").style.display="block";
+    // ping
+    try{const p=await send(5,0,new Uint8Array([]));log("Ping OK: "+Array.from(p.payload).map(b=>b.toString(16)).join(' '))}catch(e){log("Ping failed: "+e.message)}
+  }catch(e){setStatus("Connect failed: "+e.message);log(e.message)}
+}
+
+async function disconnect(){
+  try{if(dev) await dev.close()}catch{}
+  dev=null;
+  setStatus("Disconnected");
+  $("#connect").disabled=false;$("#disconnect").disabled=true;$("#ping").disabled=true;
+  $("#panel").style.display="none";
+}
+
+async function readAll(){
+  const map={f1:1,f3:3,f32:32,f33:33,f34:34,f98:98};
+  for(const [elId,fid] of Object.entries(map)){
+    try{
+      const r=await send(1,fid,new Uint8Array([]));
+      const el=$("#"+elId);
+      if(fid===32||fid===33) el.value = r.payload.length===2 ? b2u16(r.payload) : r.payload[0];
+      else if([34,98].includes(fid)) el.value = r.payload[0]||"";
+      else el.value = b2str(r.payload);
+      log("Read fid "+fid+" OK");
+    }catch(e){log("Read fid "+fid+" failed: "+e.message)}
+  }
+}
+
+async function saveAll(){
+  const map={f1:1,f3:3,f32:32,f33:33,f34:34,f98:98};
+  for(const [elId,fid] of Object.entries(map)){
+    const el=$("#"+elId);
+    let data;
+    if(fid===32||fid===33) data=u16b(parseInt(el.value)||0);
+    else if([34,98].includes(fid)) data=new Uint8Array([parseInt(el.value)||0]);
+    else data=str2b(el.value);
+    try{await send(2,fid,data);log("Saved fid "+fid)}catch(e){log("Save fid "+fid+" failed: "+e.message)}
+  }
+  log("Save complete");
+}
+
+async function resetDef(){
+  if(!confirm("Reset your Cobalt-X Zero to defaults?")) return;
+  try{await send(4,0,new Uint8Array([]));log("Reset OK");await readAll()}catch(e){log("Reset failed: "+e.message)}
+}
+
+$("#connect").onclick=connect;
+$("#disconnect").onclick=disconnect;
+$("#ping").onclick=async()=>{try{const r=await send(5,0,new Uint8Array([]));log("Ping: "+Array.from(r.payload).join(','))}catch(e){log(e.message)}};
+$("#read").onclick=readAll;
+$("#save").onclick=saveAll;
+$("#reset").onclick=resetDef;
+
+log("Ready. Click Connect and select your Cobalt-X Zero in the picker.");
+</script>
+</body>
+</html>
