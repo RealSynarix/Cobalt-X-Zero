@@ -4,7 +4,7 @@ useful info:
 
 PMW3360 sensor
 STM32G4KBT6 MCU
-58 grams heavy*
+weight of everything = exactly 50g with perfect balance/disrobution. *EXCLUDING CABLE
 2x LEDs
 silent clicks
 highly configurable via WebHID (means no bloated software that is OS dependent and eats host resources)
