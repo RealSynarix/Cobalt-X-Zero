@@ -1,0 +1,24 @@
+.profile{
+  display:flex;align-items:center;gap:12px;
+  border:1px solid var(--border);background:#0f0f12;
+  border-radius:14px;padding:10px 12px;margin:8px 0;
+  transition:border .15s,background .15s;
+}
+.profile.hardware{border-color:#3a3a3a;background:#151518;opacity:.95}
+.icon{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:#fff;flex-shrink:0;font-size:14px;
+}
+.profile-info{flex:1;min-width:0}
+.profile-name{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.profile-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.badge{font-size:10px;background:#222;border:1px solid #333;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.badge.hw{background:#2a2a2a;color:#aaa;border-color:#444}
+.profile-actions{display:flex;gap:6px;flex-wrap:wrap}
+#profileList:empty::before{content:'No profiles yet';font-size:12px;color:var(--muted)}
+.profiles-top{
+  position:sticky;top:0;z-index:5;
+  background:linear-gradient(to bottom, var(--bg) 80%, transparent);
+  padding-bottom:12px;margin-bottom:12px;
+}

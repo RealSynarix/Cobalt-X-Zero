@@ -1,0 +1,16 @@
+.log-wrap{border:1px solid var(--border);background:#0a0a0a;border-radius:10px;overflow:hidden}
+.log-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 12px;background:#111;border-bottom:1px solid var(--border);
+  font-size:11px;color:var(--muted);cursor:pointer;user-select:none;
+}
+.log-head button{margin:0;padding:4px 8px;font-size:11px;border-radius:8px}
+#log{
+  margin:0;padding:10px 12px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  font-size:11px;line-height:1.5;color:var(--log);
+  max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all;
+  background:#080808;
+}
+.log-wrap.collapsed #log{display:none}
+.log-wrap.collapsed{opacity:.8}

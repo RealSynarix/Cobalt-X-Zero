@@ -12,7 +12,7 @@ Bottom Shell:
 - If needed, sand the inside of the lens socket so the lens part drops in cleanly
 
 PCB-Holder:
-- sand edges of pushdown clip heavily until fit (must not be loose)
+- If needed, sand edges of pushdown clip heavily until fit (must not be loose)
 
 Scroll Wheel:
 - Sand the rough edge that appears after printing (sand it hard)

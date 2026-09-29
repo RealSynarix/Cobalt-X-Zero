@@ -1,671 +1,231 @@
 <!doctype html>
-<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Cobalt-X Zero - Configurator (Merged)</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;background:#070708;color:#e8e8e8;padding:18px;min-height:100vh}
-.card{border:1px solid #222;background:#111113;border-radius:18px;padding:22px;max-width:980px;margin:0 auto;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
-.center{text-align:center;padding:48px 22px}
-h1{margin:0 0 6px 0;font-size:28px;letter-spacing:-0.02em}
-h2{margin:0 0 14px 0;font-size:20px}
-h3{margin:22px 0 10px 0;font-size:14px;text-transform:uppercase;letter-spacing:0.08em;color:#aaa}
-.muted{font-size:12px;color:#777}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:760px){.grid{grid-template-columns:1fr}}
-label{font-size:12px;font-weight:600;display:block;margin-top:4px;color:#bbb}
-input,select{width:100%;padding:10px 11px;border:1px solid #2a2a2e;background:#0a0a0c;color:#eee;border-radius:10px;margin-top:6px;outline:none;transition:border 0.15s, box-shadow 0.15s}
-input:focus,select:focus{border-color:#3a7bff;box-shadow:0 0 0 3px rgba(58,123,255,0.15)}
-button{padding:10px 16px;border:0;border-radius:12px;background:#eee;color:#111;font-weight:700;cursor:pointer;margin:4px 4px 0 0;transition:transform 0.08s, opacity 0.15s}
-button:active{transform:scale(0.98)}
-button:disabled{opacity:.35;cursor:not-allowed}
-button.secondary{background:#1e1e22;color:#ddd;border:1px solid #2a2a2e}
-.big-btn{font-size:18px;padding:18px 34px;border-radius:16px;background:#fff;color:#000;min-width:280px;box-shadow:0 8px 24px rgba(255,255,255,0.15);margin-top:18px}
-.big-btn:hover{transform:translateY(-1px);box-shadow:0 12px 32px rgba(255,255,255,0.2)}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}
-#status{margin-top:12px;font-size:12px;white-space:pre-wrap;color:#8a8a8a;min-height:18px}
-.hidden{display:none !important}
-.dirty{outline:2px solid #3a7bff !important;outline-offset:2px}
-.profile{display:flex;align-items:center;gap:12px;border:1px solid #222;background:#0f0f12;border-radius:14px;padding:10px 12px;margin:8px 0;transition:border 0.15s}
-.profile.hardware{border-color:#3a3a3a;background:#151518;opacity:0.95}
-.icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0;font-size:14px}
-.profileInfo{flex:1}
-.profileName{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
-.profileMeta{font-size:11px;color:#777;margin-top:2px}
-.badge{font-size:10px;background:#222;border:1px solid #333;border-radius:6px;padding:2px 7px}
-.badge.hw{background:#2a2a2a;color:#aaa;border-color:#444}
-
-/* Loader */
-#loader{margin:28px auto 0 auto;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:16px}
-.spinner{width:48px;height:48px;border:3px solid #222;border-top-color:#fff;border-radius:50%;animation:spin 0.9s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.progress-bar{width:100%;height:4px;background:#1a1a1e;border-radius:999px;overflow:hidden}
-.progress-fill{height:100%;width:40%;background:linear-gradient(90deg,#fff,#aaa);border-radius:999px;animation:indeterminate 1.2s ease-in-out infinite}
-@keyframes indeterminate{0%{transform:translateX(-100%)}50%{transform:translateX(60%)}100%{transform:translateX(200%)}}
-.faint{font-size:12px;color:#666;letter-spacing:0.02em;min-height:18px;transition:opacity 0.2s}
-.error{margin-top:18px;color:#ff5a5a;font-size:13px;font-weight:600;background:#1a0f0f;border:1px solid #3a1a1a;padding:10px 12px;border-radius:10px}
-section{border-top:1px solid #1a1a1e;padding-top:6px;margin-top:10px}
-section:first-of-type{border-top:none}
-.pb7-conditional{display:none}
-.pb7-conditional.show{display:block}
-</style></head><body>
-<div class="container">
-
-<div id="connectPage" class="card center">
-  <h1>Cobalt-X Zero</h1>
-  <p class="muted">Merged Firmware — Config + Base (No Sensor Module) — VID 0x1209 PID 0xC0BA RID 2</p>
-  <button id="mainConnectBtn" class="big-btn">Connect Cobalt-X Zero</button>
-  <div id="loader" class="hidden">
-    <div class="spinner"></div>
-    <div class="progress-bar"><div class="progress-fill"></div></div>
-    <div id="stepText" class="faint">Initializing...</div>
-  </div>
-  <div id="connectError" class="error hidden"></div>
-  <p class="muted" style="margin-top:22px">Press to forget previous pairings and connect. Check browser console for detailed logs.</p>
-</div>
-
-<div id="configPage" class="hidden">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <h2 style="margin:0">Configuration — Merged Build</h2>
-      <span class="muted">All values live on hardware — profiles in browser</span>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cobalt-X Zero - Configurator</title>
+<link rel="stylesheet" href="./css/base.css"/>
+<link rel="stylesheet" href="./css/layout.css"/>
+<link rel="stylesheet" href="./css/components/card.css"/>
+<link rel="stylesheet" href="./css/components/button.css"/>
+<link rel="stylesheet" href="./css/components/tab.css"/>
+<link rel="stylesheet" href="./css/components/profile.css"/>
+<link rel="stylesheet" href="./css/components/form.css"/>
+<link rel="stylesheet" href="./css/components/status.css"/>
+<link rel="stylesheet" href="./css/components/log.css"/>
+<link rel="stylesheet" href="./css/components/overlay.css"/>
+</head>
+<body>
+<div id="browserOverlay" class="hidden">
+  <div class="overlay-card">
+    <h2>Browser not supported</h2>
+    <p>Use Chrome or Edge on desktop with WebHID enabled.</p>
+    <p>WebHID is needed to talk to the mouse directly from the browser. No install, no bloat. Your browser does not expose <code>navigator.hid</code>.</p>
+    <p>Your browser:</p>
+    <div class="overlay-ua" id="overlayUa">unknown</div>
+    <p style="margin-top:14px"><a href="https://developer.mozilla.org/en-US/docs/Web/API/HID" target="_blank" rel="noopener">MDN HID compatibility table</a></p>
+    <div style="margin-top:14px" class="row">
+      <button id="closeOverlay" class="secondary">Continue anyway</button>
     </div>
-    <div class="row" style="margin-top:14px">
-      <button id="disconnect" class="secondary">Disconnect</button>
-      <button id="read" class="secondary">Re-Read All</button>
-      <button id="save" disabled>Save Changed (0)</button>
-      <button id="reset" class="secondary">Factory Reset</button>
-    </div>
-    <div id="status">Connected</div>
-
-    <section>
-      <h3>Device Info</h3>
-      <div class="grid">
-        <label>Device Name (FID 1)<input id="f1" maxlength="31"></label>
-        <label>Manufacturer (FID 2)<input id="f2" maxlength="31"></label>
-        <label>Serial (FID 3)<input id="f3" maxlength="15"></label>
-        <label>FW Version (FID 4) — read-only<input id="f4" maxlength="15" readonly></label>
-      </div>
-    </section>
-
-    <section>
-      <h3>Module Toggles</h3>
-      <div class="grid">
-        <label>Buttons Module (FID 17)<select id="f17"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
-        <label>Scroll Module (FID 18)<select id="f18"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
-        <label>HyprX Module (FID 19)<select id="f19"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
-        <label>LEDs Module (FID 20)<select id="f20"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
-        <label>SOF / Polling Module (FID 21)<select id="f21"><option value="0">Disabled (free-run)</option><option value="1">Enabled (SOF throttled)</option></select></label>
-      </div>
-    </section>
-
-    <section>
-      <h3>Polling</h3>
-      <div class="grid">
-        <label>Poll Hz (FID 33)<select id="f33"><option value="125">125</option><option value="250">250</option><option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option><option value="4000">4000</option><option value="8000">8000</option></select></label>
-      </div>
-    </section>
-
-    <section>
-      <h3>Debounce & Click</h3>
-      <div class="grid">
-        <label>Debounce PB3 LMB (FID 48) 0-20 ms<input id="f48" type="number" min="0" max="20"></label>
-        <label>Debounce PB4 RMB (FID 49) 0-20 ms<input id="f49" type="number" min="0" max="20"></label>
-        <label>Debounce PB5 MMB (FID 50) 0-20 ms<input id="f50" type="number" min="0" max="20"></label>
-        <label>Debounce PB6 Side (FID 51) 0-20 ms<input id="f51" type="number" min="0" max="20"></label>
-        <label>Debounce PB7 Macro/Pio (FID 52) 0-20 ms<input id="f52" type="number" min="0" max="20"></label>
-        <label>Click Mode (FID 53)<select id="f53"><option value="0">Normal</option><option value="1">Rapid</option><option value="2">Custom</option></select></label>
-      </div>
-    </section>
-
-    <section>
-      <h3>Scroll Wheel</h3>
-      <div class="grid">
-        <label>Wheel Divisor (FID 64) 1-8<input id="f64" type="number" min="1" max="8"></label>
-        <label>Wheel Invert (FID 65)<select id="f65"><option value="0">Normal</option><option value="1">Inverted</option></select></label>
-        <label>Wheel Smooth (FID 66)<select id="f66"><option value="0">No Smoothing</option><option value="1">Smooth</option></select></label>
-      </div>
-    </section>
-
-    <section>
-      <h3>HyprX Engine</h3>
-      <div class="grid">
-        <label>HyprX Enable (FID 80)<select id="f80"><option value="0">Off</option><option value="1">On</option></select></label>
-        <label>HyprX LED Colour Use Macro (FID 81)<select id="f81"><option value="0">Use Default LED</option><option value="1">Use Macro LED when active</option></select></label>
-        <label>HyprX Target (FID 82)<select id="f82"><option value="0">Left (LMB)</option><option value="1">Right (RMB)</option></select></label>
-        <label>HyprX Steps-to-Click STC (FID 83) 1-24<input id="f83" type="number" min="1" max="24"></label>
-        <label>HyprX Divisor (FID 84) 1-4<input id="f84" type="number" min="1" max="4"></label>
-        <label>HyprX Hold ms (FID 85) 0-500<input id="f85" type="number" min="0" max="500"></label>
-      </div>
-      <p class="muted">HyprX toggles macro → mode. When active, scroll converts to clicks. LED colour switches per FID 81.</p>
-    </section>
-
-    <section>
-      <h3>LEDs</h3>
-      <div class="grid">
-        <label>LED Default Colour (FID 96)<input id="f96" type="color"></label>
-        <label>LED Macro/HyprX Colour (FID 97)<input id="f97" type="color"></label>
-        <label>LED Brightness (FID 98) 0-255<input id="f98" type="number" min="0" max="255"></label>
-        <label>LED Effect (FID 99)<select id="f99"><option value="0">Static</option><option value="1">Breathing</option><option value="2">Pulse</option><option value="3">Static (alt)</option><option value="4">Off/Reserved</option></select></label>
-        <label>LED Speed (FID 100) 0-255<input id="f100" type="number" min="0" max="255"></label>
-      </div>
-    </section>
-
-    <section>
-      <h3>Programmable PIO Button (PB7)</h3>
-      <div class="grid">
-        <label>PB7 Mode (FID 112)<select id="f112"><option value="0">Type "Program Me!"</option><option value="1">Mouse Button</option><option value="2">Keyboard Key</option><option value="3">Key Combo (8 keys max)</option><option value="4">Media (reserved)</option></select></label>
-        <label>PB7 AT (FID 113 — legacy)<select id="f113"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
-        <label class="pb7-conditional" data-show-for="1">PB7 Mouse Button (FID 114)<select id="f114"><option value="0">Left</option><option value="1">Right</option><option value="2">Middle</option><option value="3">Back</option><option value="4">Forward</option><option value="5">Btn5</option><option value="6">Btn6</option><option value="7">Btn7</option></select></label>
-        <label class="pb7-conditional" data-show-for="2">PB7 Keyboard Key Code (FID 115) 0-255<input id="f115" type="number" min="0" max="255" placeholder="e.g. 65 = A"></label>
-        <label class="pb7-conditional" data-show-for="3">PB7 Combo (FID 116) comma-separated key codes, max 8<input id="f116" placeholder="e.g. 128, 129, 65 (Ctrl+Shift+A) — use HID codes"></label>
-        <label class="pb7-conditional" data-show-for="4">PB7 Media Code (FID 117) 0-12<input id="f117" type="number" min="0" max="12"></label>
-      </div>
-      <p class="muted">PB7 is the side PIO button. Mode defines its action. Mouse mode uses FID 114, Key uses 115, Combo uses 116 (8-byte array), Media uses 117. FID 113 kept for compatibility.</p>
-    </section>
-
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <h3 style="margin:0 0 8px 0">Profiles — localStorage (no sensor)</h3>
-    <div id="profileList"></div>
-    <div class="grid" style="margin-top:10px">
-      <label>New profile name<input id="newProfileName" maxlength="24" placeholder="e.g. Competitive"></label>
-      <label>Icon color<input id="newProfileColor" type="color" value="#0a5bd7"></label>
-    </div>
-    <div class="row"><button id="createProfile">Save Current as Profile</button><button id="exportProfiles" class="secondary">Export JSON</button><input id="importFile" type="file" accept=".json" style="display:none"><button id="importProfiles" class="secondary">Import JSON</button></div>
-    <p class="muted">Hardware Default is auto-created from exact hardware values on connect. It cannot be deleted or loaded — it is read-only reference. Other profiles can be loaded (writes to UI, then Save Changed) or deleted.</p>
   </div>
 </div>
 
+<div class="wrap">
+  <div id="connectPage" class="card center connect-page">
+    <h1 class="big-title">Cobalt-X Zero</h1>
+    <p class="muted" style="margin-top:8px">Open source, 3D printable, 50g balanced. STM32G431, PMW3360, 2 LEDs, silent clicks, ~2.5ms, 1kHz polling (8kHz internal + SOF sync). WebHID, no install.</p>
+    <button id="mainConnectBtn" class="big-btn">Connect Cobalt-X Zero</button>
+    <div id="loader" class="hidden">
+      <div class="spinner"></div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <div id="stepText" class="faint">Initializing...</div>
+    </div>
+    <div id="connectError" class="error hidden"></div>
+    <div style="margin-top:16px" class="row" style="justify-content:center">
+      <button id="openDemoBtn" class="ghost">Open demo</button>
+    </div>
+    <p class="muted" style="margin-top:10px">Chrome or Edge desktop. Pairing is forgotten first so you always pick a fresh device.</p>
+  </div>
+
+  <div id="configPage" class="hidden">
+    <div class="card" style="margin-bottom:16px">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <h2 style="margin:0;font-size:18px;font-weight:800;letter-spacing:-.02em">Cobalt-X Zero</h2>
+          <span class="muted" id="deviceSub">Browser configurator</span>
+        </div>
+        <span class="pill" id="modePill">LIVE</span>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button id="disconnectBtn" class="secondary">Disconnect</button>
+        <button id="pingBtn" class="secondary">Ping</button>
+        <button id="readBtn" class="secondary">Re-read</button>
+        <button id="saveBtn" disabled>Save changed (0)</button>
+        <button id="resetBtn" class="secondary" style="border-color:#3a1a1a;color:#ff8a8a">Factory reset</button>
+      </div>
+      <div id="status" style="margin-top:10px">Idle</div>
+    </div>
+
+    <div class="tabs-bar" id="tabsBar">
+      <button class="tab-btn active" data-tab="profiles">Profiles</button>
+      <button class="tab-btn" data-tab="device">Device</button>
+      <button class="tab-btn" data-tab="sensor">Sensor</button>
+      <button class="tab-btn" data-tab="buttons">Buttons</button>
+      <button class="tab-btn" data-tab="scroll">Scroll</button>
+      <button class="tab-btn" data-tab="lights">Lights</button>
+      <button class="tab-btn" data-tab="hyprx">HyprX</button>
+      <button class="tab-btn" data-tab="pio">PIO</button>
+    </div>
+
+    <!-- PROFILES TAB (also top) -->
+    <div class="tab-panel active" id="tab-profiles">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h3 style="margin:0">Profiles</h3>
+          <div class="row">
+            <button id="exportProfiles" class="secondary">Export</button>
+            <button id="importProfiles" class="secondary">Import</button>
+            <input id="importFile" type="file" accept=".json" class="hidden"/>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:8px">Stored in this browser. Load one, then save to write it to the mouse. On-device snapshot is auto-created on connect.</p>
+        <div id="profileList" style="margin-top:12px"></div>
+        <div class="grid" style="margin-top:16px">
+          <label>New profile name<input id="newProfileName" maxlength="24" placeholder="e.g. Competitive"/></label>
+          <label>Icon color<input id="newProfileColor" type="color" value="#0a5bd7"/></label>
+        </div>
+        <div class="row" style="margin-top:10px"><button id="createProfileBtn">Save current as profile</button></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-device">
+      <div class="card">
+        <h3>Device</h3>
+        <div class="grid">
+          <label>Device name<input id="f1" maxlength="31"/></label>
+          <label>Manufacturer<input id="f2" maxlength="31"/></label>
+          <label>Serial<input id="f3" maxlength="15"/></label>
+          <label>Firmware<input id="f4" readonly/></label>
+        </div>
+        <section>
+          <h3>Modules</h3>
+          <div class="grid">
+            <label>Sensor module<select id="f16"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
+            <label>Buttons module<select id="f17"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
+            <label>Scroll module<select id="f18"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
+            <label>HyprX module<select id="f19"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
+            <label>LEDs module<select id="f20"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
+            <label>SOF module<select id="f21"><option value="0">Disabled (free-run)</option><option value="1">Enabled (SOF throttled)</option></select></label>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-sensor">
+      <div class="card">
+        <h3>Sensor</h3>
+        <div class="grid">
+          <label>DPI <span>100 - 32000</span><input id="f32" type="number" min="100" max="32000"/></label>
+          <label>Poll rate<select id="f33"><option value="125">125 Hz</option><option value="250">250 Hz</option><option value="500">500 Hz</option><option value="1000">1000 Hz</option><option value="2000">2000 Hz</option><option value="4000">4000 Hz</option><option value="8000">8000 Hz</option></select></label>
+          <label>Lift-off distance<select id="f34"><option value="1">1 mm</option><option value="2">2 mm</option><option value="3">3 mm</option></select></label>
+          <label>LOD squal <span>10 - 200</span><input id="f35" type="number" min="10" max="200"/></label>
+          <label>Angle snap<select id="f36"><option value="0">Off</option><option value="1">On</option></select></label>
+          <label>Snap strength <span>0 - 100</span><input id="f37" type="number" min="0" max="100"/></label>
+          <label>Surface<select id="f38"><option value="0">Default</option><option value="1">Cloth</option><option value="2">Hard</option><option value="3">Custom</option></select></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-buttons">
+      <div class="card">
+        <h3>Buttons</h3>
+        <div class="grid">
+          <label>Debounce PB3 LMB <span>0 - 20 ms</span><input id="f48" type="number" min="0" max="20"/></label>
+          <label>Debounce PB4 RMB <span>0 - 20 ms</span><input id="f49" type="number" min="0" max="20"/></label>
+          <label>Debounce PB5 MMB <span>0 - 20 ms</span><input id="f50" type="number" min="0" max="20"/></label>
+          <label>Debounce PB6 Side <span>0 - 20 ms</span><input id="f51" type="number" min="0" max="20"/></label>
+          <label>Debounce PB7 PIO <span>0 - 20 ms</span><input id="f52" type="number" min="0" max="20"/></label>
+          <label>Click mode<select id="f53"><option value="0">Normal</option><option value="1">Rapid</option><option value="2">Custom</option></select></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-scroll">
+      <div class="card">
+        <h3>Scroll</h3>
+        <div class="grid">
+          <label>Wheel divisor <span>1 - 8</span><input id="f64" type="number" min="1" max="8"/></label>
+          <label>Wheel invert<select id="f65"><option value="0">Normal</option><option value="1">Inverted</option></select></label>
+          <label>Wheel smooth<select id="f66"><option value="0">No smoothing</option><option value="1">Smooth</option></select></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-lights">
+      <div class="card">
+        <h3>Lights</h3>
+        <div class="grid">
+          <label>Default colour
+            <div class="color-row"><div class="color-swatch" data-swatch-for="f96" style="background:#0a5bd7"></div><input id="f96" type="color" data-color="1"/></div>
+          </label>
+          <label>Macro colour
+            <div class="color-row"><div class="color-swatch" data-swatch-for="f97" style="background:#ff3333"></div><input id="f97" type="color" data-color="1"/></div>
+          </label>
+          <label>Brightness <span>0 - 255</span><input id="f98" type="number" min="0" max="255"/></label>
+          <label>Effect<select id="f99"><option value="0">Static</option><option value="1">Breathing</option><option value="2">Pulse</option><option value="3">Static alt</option><option value="4">Off</option></select></label>
+          <label>Effect speed <span>0 - 255</span><input id="f100" type="number" min="0" max="255"/></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-hyprx">
+      <div class="card">
+        <h3>HyprX</h3>
+        <p class="muted" style="margin-bottom:12px">Scroll becomes clicks when macro is held. LED switches if enabled.</p>
+        <div class="grid">
+          <label>HyprX enable<select id="f80"><option value="0">Off</option><option value="1">On</option></select></label>
+          <label>Use macro colour<select id="f81"><option value="0">Use default</option><option value="1">Use macro when active</option></select></label>
+          <label>Target<select id="f82"><option value="0">Left (LMB)</option><option value="1">Right (RMB)</option></select></label>
+          <label>Steps to click <span>1 - 24</span><input id="f83" type="number" min="1" max="24"/></label>
+          <label>Divisor <span>1 - 4</span><input id="f84" type="number" min="1" max="4"/></label>
+          <label>Hold ms <span>0 - 500</span><input id="f85" type="number" min="0" max="500"/></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-pio">
+      <div class="card">
+        <h3>PIO - Side button</h3>
+        <p class="muted" style="margin-bottom:12px">PB7 side button. Mode picks the action. Combo is up to 8 HID codes.</p>
+        <div class="grid">
+          <label>Mode<select id="f112"><option value="0">Type "Program Me!"</option><option value="1">Mouse button</option><option value="2">Keyboard key</option><option value="3">Key combo (8 max)</option><option value="4">Media</option></select></label>
+          <label>AT legacy<select id="f113"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+          <label class="pb7-conditional" data-show-for="1">Mouse button<select id="f114"><option value="0">Left</option><option value="1">Right</option><option value="2">Middle</option><option value="3">Back</option><option value="4">Forward</option><option value="5">Btn5</option><option value="6">Btn6</option><option value="7">Btn7</option></select></label>
+          <label class="pb7-conditional" data-show-for="2">Key code <span>0 - 255</span><input id="f115" type="number" min="0" max="255" placeholder="e.g. 65 = A"/></label>
+          <label class="pb7-conditional" data-show-for="3">Combo <span>comma HID codes</span><input id="f116" placeholder="e.g. 224, 4 (Ctrl+A)"/></label>
+          <label class="pb7-conditional" data-show-for="4">Media code <span>0 - 12</span><input id="f117" type="number" min="0" max="12"/></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="log-wrap" id="logWrap">
+        <div class="log-head" id="logHead"><span>Debug log</span><div class="row"><button id="clearLog" class="secondary">Clear</button><button id="toggleLog" class="secondary">Hide</button></div></div>
+        <pre id="log"></pre>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div>Open source. 3D printable. WebHID, no extra software. 50g balanced, PMW3360, STM32G4.</div>
+    <div class="footer-links">
+      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      <a href="./">GitHub Pages</a>
+      <span>VID 1209 / PID C0BA / RID 2</span>
+    </div>
+  </footer>
 </div>
 
-<script>
-const VID=0x1209,PID=0xC0BA,RID=2;
-let dev=null;
-let baseline={},current={},dirty=new Set();
-const $=s=>document.querySelector(s);
-const statusEl=$("#status");
-
-function log(m){ console.log("[Cobalt] "+m); }
-function setStatus(m){ if(statusEl) statusEl.textContent=m; console.log("[Status] "+m); }
-function setStep(t){ const el=$("#stepText"); if(el) el.textContent=t; console.log("[Step] "+t); }
-
-function enc(cmd,fid,data){
-  const b=new Uint8Array(64);
-  b[0]=cmd; b[1]=fid; b[2]=data.length&255; b[3]=data.length>>8; b.set(data,4);
-  return b;
-}
-function dec(raw){
-  let d;
-  if(raw instanceof DataView){ d=new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength); }
-  else if(raw instanceof Uint8Array){ d=raw; }
-  else { d=new Uint8Array(raw); }
-  if(d.length>=6 && d[0]===RID && [1,2,4,5].includes(d[1])){
-    d = d.slice(1);
-  }
-  if(d.length<5) return {cmd:0,fid:0,len:0,status:99,payload:new Uint8Array([]), rawLen:d.length};
-  const len=d[2]|(d[3]<<8);
-  return{cmd:d[0],fid:d[1],len:len,status:d[4],payload:d.slice(5,5+len)}
-}
-function str2b(s){return new TextEncoder().encode(s)}
-function b2str(b){try{return new TextDecoder().decode(b).replace(/\0+$/,'')}catch{return""}}
-function u16b(v){return new Uint8Array([v&255,v>>8])}
-function b2u16(b){return b[0]|(b[1]<<8)}
-function hex2rgb(h){if(!h||h.length!==7) return [0,0,0]; return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
-function rgb2hex(r,g,b){return "#"+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}
-
-const SCHEMA={
-  1:{type:'string',max:31,label:'Device Name'},
-  2:{type:'string',max:31,label:'Manufacturer'},
-  3:{type:'string',max:15,label:'Serial'},
-  4:{type:'string',max:15,readonly:true,label:'FW Version'},
-  17:{type:'bool',label:'Buttons Module'},
-  18:{type:'bool',label:'Scroll Module'},
-  19:{type:'bool',label:'HyprX Module'},
-  20:{type:'bool',label:'LEDs Module'},
-  21:{type:'bool',label:'SOF Module'},
-  33:{type:'enum',values:[125,250,500,1000,2000,4000,8000],label:'Poll Hz'},
-  48:{type:'u8',min:0,max:20,label:'Debounce PB3'},
-  49:{type:'u8',min:0,max:20,label:'Debounce PB4'},
-  50:{type:'u8',min:0,max:20,label:'Debounce PB5'},
-  51:{type:'u8',min:0,max:20,label:'Debounce PB6'},
-  52:{type:'u8',min:0,max:20,label:'Debounce PB7'},
-  53:{type:'enum',values:[0,1,2],label:'Click Mode'},
-  64:{type:'u8',min:1,max:8,label:'Wheel Div'},
-  65:{type:'bool',label:'Wheel Invert'},
-  66:{type:'bool',label:'Wheel Smooth'},
-  80:{type:'bool',label:'HyprX En'},
-  81:{type:'bool',label:'HyprX LED'},
-  82:{type:'enum',values:[0,1],label:'HyprX Target'},
-  83:{type:'u8',min:1,max:24,label:'HyprX STC'},
-  84:{type:'u8',min:1,max:4,label:'HyprX Div'},
-  85:{type:'u16',min:0,max:500,label:'HyprX Hold'},
-  96:{type:'rgb',label:'LED Default'},
-  97:{type:'rgb',label:'LED Macro'},
-  98:{type:'u8',min:0,max:255,label:'LED Bri'},
-  99:{type:'enum',values:[0,1,2,3,4],label:'LED Effect'},
-  100:{type:'u8',min:0,max:255,label:'LED Speed'},
-  112:{type:'enum',values:[0,1,2,3,4],label:'PB7 Mode'},
-  113:{type:'enum',values:[0,1,2,3],label:'PB7 AT'},
-  114:{type:'enum',values:[0,1,2,3,4,5,6,7],label:'PB7 Mouse'},
-  115:{type:'u8',min:0,max:255,label:'PB7 Key'},
-  116:{type:'combo',label:'PB7 Combo'},
-  117:{type:'enum',values:[0,1,2,3,4,5,6,7,8,9,10,11,12],label:'PB7 Media'},
-};
-
-function validate(fid, rawStr){
-  const sch=SCHEMA[fid]; if(!sch) return {ok:false,err:'Unknown FID'};
-  if(sch.readonly) return {ok:false,err:'Read-only'};
-  if(sch.type==='string'){
-    if(rawStr.length>sch.max) return {ok:false,err:`Too long max ${sch.max}`};
-    return {ok:true,data:str2b(rawStr)};
-  }
-  if(sch.type==='rgb'){
-    if(!/^#[0-9a-fA-F]{6}$/.test(rawStr)) return {ok:false,err:'Need #rrggbb'};
-    return {ok:true,data:new Uint8Array(hex2rgb(rawStr))};
-  }
-  if(sch.type==='u8' || sch.type==='bool'){
-    const v=Number(rawStr); if(!Number.isInteger(v)||v<sch.min||v>sch.max) {
-      if(sch.type==='bool' && (v===0||v===1)){} else if(sch.type==='bool'){return {ok:false,err:`Need 0/1`};}
-      else return {ok:false,err:`Range ${sch.min}-${sch.max}`};
-    }
-    return {ok:true,data:new Uint8Array([v])};
-  }
-  if(sch.type==='u16'){
-    const v=Number(rawStr); if(!Number.isInteger(v)||v<sch.min||v>sch.max) return {ok:false,err:`Range ${sch.min}-${sch.max}`};
-    return {ok:true,data:u16b(v)};
-  }
-  if(sch.type==='enum'){
-    const v=Number(rawStr); if(!sch.values.includes(v)) return {ok:false,err:`Must be one of ${sch.values.join(',')}`};
-    // enum is stored as u8 except poll and hyprx_hold which are u16
-    if(fid===33 || fid===85) return {ok:true,data:u16b(v)};
-    return {ok:true,data:new Uint8Array([v])};
-  }
-  if(sch.type==='combo'){
-    // rawStr like "1,2,3" or "a,b" or empty
-    if(!rawStr.trim()) return {ok:true,data:new Uint8Array([])};
-    try{
-      const parts=rawStr.split(',').map(s=>s.trim()).filter(s=>s.length>0);
-      if(parts.length>8) return {ok:false,err:'Max 8 keys'};
-      const bytes=parts.map(p=>{
-        const n=Number(p);
-        if(!Number.isInteger(n)||n<0||n>255) throw Error('bad byte '+p);
-        return n;
-      });
-      return {ok:true,data:new Uint8Array(bytes)};
-    }catch(e){ return {ok:false,err:'Combo parse error: '+e.message}; }
-  }
-  return {ok:false,err:'Unknown type'};
-}
-
-function setDirty(fid,changed){
-  const el=$("#f"+fid);
-  if(changed){dirty.add(fid); el?.classList.add("dirty")}else{dirty.delete(fid); el?.classList.remove("dirty")}
-  updateSaveBtn()
-}
-function updateSaveBtn(){ const b=$("#save"); if(!b) return; b.textContent=`Save Changed (${dirty.size})`; b.disabled=dirty.size===0||!dev; }
-
-function snapshotCurrent(){
-  current={};
-  for(const fid of Object.keys(SCHEMA).map(Number)){
-    const el=document.getElementById("f"+fid); if(!el) continue;
-    current[fid]=el.value;
-  }
-}
-function checkDirty(){
-  for(const fid of Object.keys(SCHEMA).map(Number)){
-    if(baseline[fid]===undefined) continue;
-    if(current[fid]!==baseline[fid]) setDirty(fid,true); else setDirty(fid,false);
-  }
-}
-
-async function sendWithRetry(cmd,fid,data,retries=3){
-  for(let i=0;i<=retries;i++){
-    try{
-      const out=enc(cmd,fid,data);
-      await dev.sendFeatureReport(RID,out);
-      await new Promise(r=>setTimeout(r,70));
-      const raw=await dev.receiveFeatureReport(RID);
-      const rr=dec(raw);
-      if(rr.rawLen!==undefined && rr.rawLen<5){
-        throw Error(`short reply ${rr.rawLen} bytes`);
-      }
-      if(rr.status===3){
-        log(`FID${fid} busy, retry ${i+1}`);
-        await new Promise(r=>setTimeout(r,110));
-        continue;
-      }
-      if(rr.status!==0) throw Error("dev status "+rr.status);
-      if(rr.cmd!==cmd||rr.fid!==fid) log(`WARN cmd/fid mismatch got ${rr.cmd}/${rr.fid} exp ${cmd}/${fid}`);
-      return rr;
-    }catch(e){
-      log(`send ${cmd}/${fid} attempt ${i+1} FAIL ${e.message}`);
-      if(i===retries) throw e;
-      await new Promise(r=>setTimeout(r,160));
-      try{if(!dev.opened) await dev.open();}catch{}
-    }
-  }
-}
-
-async function forgetAll(){
-  try{
-    if(!('hid' in navigator)) return;
-    const ds=await navigator.hid.getDevices();
-    for(const d of ds){
-      if(d.vendorId===VID && d.productId===PID){
-        try{ await d.forget(); log("Forgot "+(d.productName||'device')); }catch(e){ log("Forget fail "+e.message); }
-      }
-    }
-  }catch(e){ log("forgetAll error "+e.message); }
-}
-
-function payloadToVal(fid, payload){
-  if([96,97].includes(fid)){
-    if(payload.length>=3) return rgb2hex(payload[0],payload[1],payload[2]);
-    return "#000000";
-  }
-  if([33,85].includes(fid)){
-    if(payload.length>=2) return (payload[0]|(payload[1]<<8)).toString();
-    return payload[0]?.toString()||"0";
-  }
-  if([1,2,3,4].includes(fid)){
-    return b2str(payload);
-  }
-  if([116].includes(fid)){
-    // combo as comma string
-    if(payload.length===0) return "";
-    return Array.from(payload).join(',');
-  }
-  // default u8/enum/bool
-  if(payload.length>=1) return payload[0].toString();
-  return "";
-}
-
-async function readAll(){
-  baseline={};current={};dirty.clear();
-  document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
-  const ids=Object.keys(SCHEMA).map(Number).sort((a,b)=>a-b);
-  for(const fid of ids){
-    try{
-      const r=await sendWithRetry(1,fid,new Uint8Array([]));
-      const val=payloadToVal(fid, r.payload);
-      const el=document.getElementById("f"+fid);
-      if(el) el.value=val;
-      baseline[fid]=val;
-      log(`Read FID${fid} OK = ${val}`);
-      setStep(`Reading FID ${fid} — ${SCHEMA[fid].label} = ${val}`);
-    }catch(e){ log(`Read FID${fid} FAIL ${e.message}`); }
-    await new Promise(r=>setTimeout(r,35));
-  }
-  snapshotCurrent();checkDirty();updateSaveBtn();
-  updatePB7Visibility();
-}
-
-async function saveDirty(){
-  snapshotCurrent();
-  if(dirty.size===0){log("Nothing changed");return}
-  log(`Saving ${dirty.size} changed: ${Array.from(dirty).join(',')}`);
-  for(const fid of Array.from(dirty)){
-    const raw=document.getElementById("f"+fid)?.value ?? "";
-    const v=validate(fid,raw);
-    if(!v.ok){ log(`Validate FID${fid} FAIL ${v.err}`); setStatus(`FID${fid} invalid: ${v.err}`); continue; }
-    try{
-      await sendWithRetry(2,fid,v.data);
-      log(`Saved FID${fid} OK`);
-      baseline[fid]=current[fid];
-      setDirty(fid,false);
-    }catch(e){log(`Save FID${fid} FAIL ${e.message}`)}
-    await new Promise(r=>setTimeout(r,50));
-  }
-  updateSaveBtn();
-  // after save, update hardware default? No, hardware default stays as original hardware read, but we could keep it unchanged
-}
-
-function updatePB7Visibility(){
-  const modeEl=document.getElementById("f112");
-  if(!modeEl) return;
-  const mode=Number(modeEl.value);
-  document.querySelectorAll('.pb7-conditional').forEach(el=>{
-    const showFor=el.dataset.showFor;
-    if(showFor===undefined) return;
-    if(Number(showFor)===mode) el.classList.add('show');
-    else el.classList.remove('show');
-  });
-}
-
-// Profiles
-function loadProfiles(){ try{ const raw=localStorage.getItem('cobalt_profiles'); return raw?JSON.parse(raw):[]; }catch{return []} }
-function saveProfiles(arr){ localStorage.setItem('cobalt_profiles', JSON.stringify(arr)); }
-
-function ensureHardwareDefaultProfile(){
-  // baseline must be populated
-  let profiles=loadProfiles();
-  const hwData={};
-  for(const fid of Object.keys(SCHEMA).map(Number)){
-    if(baseline[fid]!==undefined) hwData[fid]=baseline[fid];
-  }
-  const existingIdx=profiles.findIndex(p=>p.id==='hardware_default');
-  const hwProfile={
-    id:'hardware_default',
-    name:'Hardware Default',
-    color:'#666666',
-    data:hwData,
-    created:new Date().toISOString(),
-    isHardwareDefault:true
-  };
-  if(existingIdx>=0){
-    // update data but keep created if exists? overwrite with latest hardware read
-    profiles[existingIdx]=hwProfile;
-  }else{
-    profiles.unshift(hwProfile);
-  }
-  saveProfiles(profiles);
-  log("Hardware Default profile created/updated from hardware values");
-}
-
-function renderProfiles(){
-  const list=loadProfiles();
-  const container=$("#profileList");
-  container.innerHTML="";
-  if(list.length===0){ container.innerHTML='<p class="muted">No profiles yet — connect to create Hardware Default.</p>'; return; }
-  list.forEach(p=>{
-    const isHW = p.id==='hardware_default' || p.isHardwareDefault;
-    const div=document.createElement('div');
-    div.className='profile'+(isHW?' hardware':'');
-    const letter=(p.name||'?')[0].toUpperCase();
-    const count=Object.keys(p.data||{}).length;
-    const badge = isHW ? '<span class="badge hw">Hardware Default — read-only</span>' : `<span class="badge">${count} fields</span>`;
-    const buttons = isHW ? '' : `<button data-act="load" data-id="${p.id}">Load</button><button data-act="delete" data-id="${p.id}" class="secondary">Delete</button>`;
-    div.innerHTML=`<div class="icon" style="background:${p.color||'#333'}">${letter}</div><div class="profileInfo"><div class="profileName">${p.name}${badge}</div><div class="profileMeta">${new Date(p.created).toLocaleString()}</div></div>${buttons}`;
-    container.appendChild(div);
-  });
-  container.querySelectorAll('button').forEach(b=>{
-    b.onclick=()=>{
-      if(!dev && b.dataset.act==='load'){ setStatus("Connect mouse first"); return; }
-      const id=b.dataset.id; const act=b.dataset.act;
-      const profiles=loadProfiles(); const prof=profiles.find(x=>x.id===id); if(!prof) return;
-      if(isHWProfile(prof)) return; // should not happen as no buttons
-      if(act==='load'){
-        for(const [fid,val] of Object.entries(prof.data)){
-          const el=document.getElementById("f"+fid);
-          if(el){
-            // skip readonly
-            if(SCHEMA[fid]?.readonly) continue;
-            el.value=val;
-          }
-        }
-        snapshotCurrent();checkDirty(); updatePB7Visibility();
-        log(`Loaded profile ${prof.name}`);
-        setStatus(`Loaded profile ${prof.name} — press Save Changed to push to hardware`);
-      }else if(act==='delete'){
-        if(prof.id==='hardware_default'){ setStatus("Cannot delete Hardware Default"); return; }
-        if(!confirm(`Delete ${prof.name}?`)) return;
-        saveProfiles(profiles.filter(x=>x.id!==id)); renderProfiles();
-      }
-    };
-  });
-}
-function isHWProfile(p){ return p.id==='hardware_default' || p.isHardwareDefault; }
-
-function setProfilesEnabled(enabled){
-  const box=document.getElementById("profileList")?.parentElement;
-  // we keep enabled always after connect, but disable buttons individually if needed
-  ["createProfile","exportProfiles","importProfiles"].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=!enabled; });
-}
-
-$("#createProfile").onclick=()=>{
-  if(!dev){ setStatus("Connect mouse first"); return; }
-  const name=$("#newProfileName").value.trim();
-  const color=$("#newProfileColor").value;
-  if(!name){ setStatus("Profile name required"); return; }
-  if(name==="Hardware Default"){ setStatus("Name reserved"); return; }
-  snapshotCurrent();
-  const data={};
-  for(const fid of Object.keys(SCHEMA).map(Number)){
-    const raw=current[fid];
-    if(raw===undefined) continue;
-    const sch=SCHEMA[fid];
-    if(sch.readonly) continue; // don't validate readonly, but we still want to store? skip for user profiles
-    const v=validate(fid,raw);
-    if(!v.ok){ setStatus(`Cannot save profile — FID${fid} invalid: ${v.err}`); log(`Profile save fail FID${fid} ${v.err} raw=${raw}`); return; }
-    data[fid]=raw;
-  }
-  const profiles=loadProfiles();
-  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  profiles.push({id,name,color,data,created:new Date().toISOString()});
-  saveProfiles(profiles);
-  $("#newProfileName").value="";
-  renderProfiles();
-  log(`Saved profile ${name}`);
-  setStatus(`Saved profile ${name}`);
-};
-
-$("#exportProfiles").onclick=()=>{
-  const data=JSON.stringify(loadProfiles(),null,2);
-  const blob=new Blob([data],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='cobalt_profiles.json';a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
-$("#importProfiles").onclick=()=>$("#importFile").click();
-$("#importFile").addEventListener('change',async e=>{
-  const f=e.target.files[0]; if(!f) return;
-  try{
-    const txt=await f.text(); const arr=JSON.parse(txt);
-    if(!Array.isArray(arr)) throw Error('Not array');
-    // prevent overwriting hardware_default incorrectly? Keep existing hw if present
-    let existing=loadProfiles();
-    const hw=existing.find(p=>p.id==='hardware_default');
-    // filter out any imported hardware_default to avoid duplicates, keep local hw if exists
-    const filtered=arr.filter(p=>p.id!=='hardware_default');
-    if(hw) filtered.unshift(hw);
-    // ensure at least hw present
-    saveProfiles(filtered);
-    renderProfiles();
-    log('Imported '+arr.length+' profiles');
-  }catch(err){ setStatus('Import failed: '+err.message); log('Import fail '+err.message); }
-  e.target.value="";
-});
-
-async function handleMainConnect(){
-  const btn=$("#mainConnectBtn");
-  const loader=$("#loader");
-  const errEl=$("#connectError");
-  errEl.classList.add("hidden");
-  errEl.textContent="";
-  btn.classList.add("hidden");
-  loader.classList.remove("hidden");
-  setStep("Checking WebHID support...");
-  if(!('hid' in navigator)){
-    const msg="No WebHID — use Chrome/Edge with HTTPS";
-    setStep(msg);
-    log(msg);
-    errEl.textContent="Connection Failed — "+msg+" — check console for more details";
-    errEl.classList.remove("hidden");
-    loader.classList.add("hidden");
-    btn.classList.remove("hidden");
-    return;
-  }
-  try{
-    setStep("Forgetting previous Cobalt-X devices...");
-    log("Forgetting previous devices...");
-    await forgetAll();
-    await new Promise(r=>setTimeout(r,200));
-
-    setStep("Requesting HID device — please select Cobalt-X Zero...");
-    log("requestDevice...");
-    const filters=[{vendorId:VID,productId:PID,usagePage:0xFF00},{vendorId:VID,productId:PID}];
-    const picked=await navigator.hid.requestDevice({filters});
-    if(!picked.length){ throw new Error("No device picked"); }
-    dev=picked[0];
-    const colls = dev.collections.map(c=>`0x${c.usagePage.toString(16)}/0x${c.usage.toString(16)}`).join(',');
-    log("Picked "+(dev.productName||"Cobalt")+" colls="+colls);
-    setStep(`Picked ${dev.productName||'Cobalt'} — opening...`);
-
-    if(dev.opened) try{await dev.close()}catch{}
-    await dev.open();
-    log("Opened OK");
-    setStep("Opened — reading hardware config...");
-
-    // switch UI early to config page but keep loading overlay? Requirement says after pressing it should do loading then goes to new page with all stuff
-    // So we stay on connectPage until read done, then transition
-
-    await new Promise(r=>setTimeout(r,250));
-    await readAll();
-
-    setStep("Creating Hardware Default profile from exact hardware values...");
-    ensureHardwareDefaultProfile();
-    renderProfiles();
-
-    setStep("Connected!");
-    await new Promise(r=>setTimeout(r,400));
-
-    // transition to config page
-    $("#connectPage").classList.add("hidden");
-    $("#configPage").classList.remove("hidden");
-    setStatus("Connected — Hardware Default updated");
-    setProfilesEnabled(true);
-  }catch(e){
-    console.error(e);
-    log("Connection FAIL "+e.name+" "+e.message);
-    errEl.textContent=`Connection Failed — ${e.message} — check console for more details`;
-    errEl.classList.remove("hidden");
-    loader.classList.add("hidden");
-    btn.classList.remove("hidden");
-    setStep("Failed — check console");
-  }
-}
-
-$("#mainConnectBtn").onclick=handleMainConnect;
-
-$("#disconnect").onclick=async()=>{
-  try{if(dev) await dev.close()}catch{}
-  dev=null;
-  setStatus("Disconnected");
-  $("#configPage").classList.add("hidden");
-  $("#connectPage").classList.remove("hidden");
-  $("#mainConnectBtn").classList.remove("hidden");
-  $("#loader").classList.add("hidden");
-  $("#connectError").classList.add("hidden");
-  setProfilesEnabled(false);
-  renderProfiles();
-};
-
-$("#read").onclick=readAll;
-$("#save").onclick=saveDirty;
-$("#reset").onclick=async()=>{
-  if(!confirm("Factory reset? This will reset all configs to defaults on hardware.")) return;
-  try{ await sendWithRetry(4,0,new Uint8Array([])); log("Reset OK"); setStatus("Reset OK — re-reading..."); await readAll(); ensureHardwareDefaultProfile(); renderProfiles(); }catch(e){ log("Reset FAIL "+e.message); setStatus("Reset FAIL "+e.message); }
-};
-
-Object.keys(SCHEMA).forEach(fid=>{
-  const el=document.getElementById("f"+fid); if(!el) return;
-  el.addEventListener("input",()=>{snapshotCurrent();checkDirty(); if(fid==112) updatePB7Visibility();});
-  el.addEventListener("change",()=>{snapshotCurrent();checkDirty(); if(fid==112) updatePB7Visibility();});
-});
-
-log("Ready — merged firmware configurator (no sensor). Press Connect.");
-renderProfiles();
-setProfilesEnabled(false);
-updatePB7Visibility();
-</script></body></html>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

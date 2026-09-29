@@ -1,0 +1,17 @@
+label{font-size:11px;font-weight:600;display:block;color:#bbb;letter-spacing:.01em}
+label > span{color:var(--muted);font-weight:500}
+input,select{
+  width:100%;padding:10px 11px;
+  border:1px solid var(--border-2);background:#0a0a0c;color:#eee;
+  border-radius:10px;margin-top:6px;outline:none;
+  transition:border .15s,box-shadow .15s,outline .15s;
+  font-family:inherit;font-size:13px;
+}
+input:focus,select:focus{border-color:#3a7bff;box-shadow:0 0 0 3px rgba(58,123,255,.15)}
+input[readonly]{opacity:.7;cursor:not-allowed}
+.dirty{outline:2px solid var(--accent) !important;outline-offset:2px}
+.pb7-conditional{display:none}
+.pb7-conditional.show{display:block}
+.field-hint{font-size:11px;color:#666;margin-top:4px;line-height:1.3}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-swatch{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
