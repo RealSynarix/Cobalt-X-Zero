@@ -18,8 +18,7 @@
 #define REG_Motion_Burst 0x50
 #define REG_SROM_Load_Burst 0x62
 #define REG_Lift_Config 0x63
-#define SF_N 8
-#define SENSOR_HZ 8000u
+#define SF_N 24
 #define BURST_LEN 7
 #define LOD1_MARGIN 5
 #define PEND_LIMIT 2032
@@ -162,11 +161,13 @@ prm.squal_min=(uint8_t)(sq>255?255:sq);
 prm.dpi=ap_cpi;
 prm.snap_en=g_cfg.angle_snap;
 prm.snap_strength=g_cfg.angle_strength;
-switch(g_cfg.surface){
-case 1:prm.a_min=0.25f;break;
-case 2:prm.a_min=0.35f;break;
-default:prm.a_min=0.30f;break;
-}
+prm.glitch_limit=g_cfg.glitch_limit;
+prm.motion_smooth=g_cfg.motion_smooth;
+prm.low_response=g_cfg.low_response;
+prm.high_response=g_cfg.high_response;
+prm.tracking_hyst=g_cfg.track_hyst;
+if(g_cfg.surface==1)prm.low_response=(uint8_t)(prm.low_response>10?prm.low_response-10:0);
+if(g_cfg.surface==2)prm.low_response=(uint8_t)(prm.low_response<90?prm.low_response+10:100);
 float ox,oy;
 sf_frame(pk,np,&prm,&ox,&oy);
 rem_x+=ox;rem_y+=oy;
@@ -181,7 +182,7 @@ if(pend_y<-PEND_LIMIT)pend_y=-PEND_LIMIT;
 void sensor_task(void){
 if(!ready)return;
 uint32_t now=cyc();
-if(!g_cfg.mod_sensor||!usb_device_configured()){
+if(!usb_device_configured()){
 idle=1;np=0;locked=0;
 pend_x=pend_y=0;rem_x=rem_y=0.0f;
 return;
@@ -207,11 +208,11 @@ locked=0;
 }
 if(np<SF_N&&(int32_t)(now-t_next)>=0){
 read_packet(&pk[np++]);
-t_next+=SystemCoreClock/SENSOR_HZ;
+uint32_t hz=g_cfg.sensor_poll<1000?1000:g_cfg.sensor_poll;if(hz>24000)hz=24000;t_next+=SystemCoreClock/hz;
 uint32_t n2=cyc();
 if((int32_t)(n2-t_next)>0)t_next=n2;
 }
-if(!locked&&np>=SF_N){close_frame();np=0;}
+if(!locked&&np>=g_cfg.burst_window){close_frame();np=0;}
 }
 void sensor_take(int16_t *dx,int16_t *dy){
 int32_t x=pend_x,y=pend_y;

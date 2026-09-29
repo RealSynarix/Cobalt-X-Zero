@@ -26,7 +26,6 @@ hid_task();
 if(hid_slot()){
 tactile_report_t tr;
 tactile_pop(&tr);
-if(tr.macro)hid_type_program_me();
 int16_t dx,dy;
 sensor_take(&dx,&dy);
 hid_send(tr.buttons,tr.wheel,dx,dy);

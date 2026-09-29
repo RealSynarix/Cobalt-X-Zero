@@ -1,0 +1,16 @@
+#browserOverlay{
+  position:fixed;inset:0;z-index:9999;
+  background:#0a0a0a;display:flex;align-items:center;justify-content:center;
+  padding:18px;
+}
+.overlay-card{
+  max-width:640px;width:100%;
+  border:2px solid #ff2a2a;background:#1a0f0f;color:#ffd0d0;
+  border-radius:16px;padding:24px;
+  box-shadow:0 20px 80px rgba(255,0,0,.25);
+}
+.overlay-card h2{margin:0 0 10px 0;color:#ff5a5a;font-size:20px}
+.overlay-card p{margin:8px 0;font-size:13px;line-height:1.5;color:#e8a0a0}
+.overlay-card code{color:#fff;background:#2a1515;padding:2px 6px;border-radius:6px;font-size:12px}
+.overlay-card a{color:#ff8a8a}
+.overlay-ua{margin-top:12px;padding:10px;background:#0f0a0a;border:1px solid #3a1a1a;border-radius:8px;font-size:11px;word-break:break-all;color:#aaa}

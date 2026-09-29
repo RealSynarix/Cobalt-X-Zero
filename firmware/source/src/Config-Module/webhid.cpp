@@ -17,7 +17,11 @@ memcpy(payload,data+HEADER_SIZE,dlen);
 switch(cmd){
 case CMD_PING:out[0]=0xAA;out[1]=0x55;out_len=2;break;
 case CMD_READ:if(config_get_field(fid,out,&out_len)!=0){status=STATUS_BAD_FIELD;out_len=0;}break;
-case CMD_WRITE:if(config_set_field(fid,payload,dlen)!=0){status=STATUS_BAD_VALUE;}else if(config_save()!=0){status=STATUS_SAVE_FAILED;}break;
+case CMD_WRITE:
+if(config_set_field(fid,payload,dlen)!=0){status=STATUS_BAD_VALUE;}
+else if(fid>=FIELD_PIO_BLOCK0&&fid<FIELD_PIO_BLOCK7){status=STATUS_OK;}
+else if(config_save()!=0){status=STATUS_SAVE_FAILED;}
+break;
 case CMD_RESET:config_reset_defaults();if(config_save()!=0)status=STATUS_SAVE_FAILED;break;
 default:status=STATUS_BAD_CMD;
 }

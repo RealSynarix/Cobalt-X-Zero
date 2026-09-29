@@ -28,8 +28,15 @@ export function validate(fid,rawStr,schema){
   if(sch.type==='enum'){
     const v=Number(rawStr);
     if(!sch.values.includes(v)) return {ok:false,err:`Pick ${sch.values.join(', ')}`};
-    if(fid===32||fid===33||fid===85) return {ok:true,data:u16b(v)};
+    if([22,33].includes(fid)) return {ok:true,data:u16b(v)};
     return {ok:true,data:new Uint8Array([v])};
+  }
+  if(sch.type==='blob'){
+    if(!/^(?:[0-9a-fA-F]{2})*$/.test(rawStr)) return {ok:false,err:'Hex bytes expected'};
+    if(rawStr.length/2>sch.max) return {ok:false,err:`Max ${sch.max} bytes`};
+    const out=new Uint8Array(rawStr.length/2);
+    for(let i=0;i<out.length;i++)out[i]=parseInt(rawStr.slice(i*2,i*2+2),16);
+    return {ok:true,data:out};
   }
   if(sch.type==='combo'){
     if(!rawStr.trim()) return {ok:true,data:new Uint8Array([])};

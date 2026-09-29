@@ -1,15 +1,15 @@
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 :root{
-  --bg:#0a0a0a;
-  --card:#111;
-  --card-2:#151518;
-  --border:#222;
-  --border-2:#2a2a2e;
-  --text:#e8e8e8;
-  --muted:#777;
-  --muted-2:#aaa;
-  --accent:#0a5bd7;
+  --bg:#080a10;
+  --card:#0f131c;
+  --card-2:#151b27;
+  --border:#1d2635;
+  --border-2:#29354a;
+  --text:#edf2ff;
+  --muted:#77829a;
+  --muted-2:#aab5cc;
+  --accent:#2e5bff;
   --log:#0f0;
   --radius:14px;
   --pad:18px;
