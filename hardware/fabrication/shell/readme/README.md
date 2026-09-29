@@ -1,10 +1,40 @@
-# 3D Models
+# 3D Models - Shell
 
-Everything you need to 3D-print the Cobalt-X Zero shell lives in this folder, plus two text files:
+Everything needed to print shell plus slicer settings and post-processing.
 
-- `settings.txt` — recommended slicer settings
-- `post-processing.txt` — what to do after the print finishes
+| File | What it is |
+| --- | --- |
+| `../Bottom-Plate.stl` | Bottom plate with ribs/pockets that prevent wobble and locate PCB |
+| `../Top-Shell.stl` | Top shell |
+| `../Scroll-Wheel.stl` | Custom wheel for EC10 |
+| `../Side-Buttons.stl` | Side buttons |
+| `../Top-Plungers.stl` | Plungers and studs |
+| `../PCB-Holder.stl` | Small clip that goes on top of bottom shell near MCU hole, holds board down so it won't lift |
+| `settings.txt` | Slicer settings |
+| `post-processing.txt` | Cleaning and fit |
+| `README.md` | This file |
 
-I’m not a professional 3D modeller. These were made in TinkerCAD (and MeshInspector for the top shell only). They’re the tools I know, so that’s what I used. A proper Blender / CAD person could definitely make cleaner models, but I’m still really happy with how these turned out. I spent far more time than I would like to admit on these, but its pretty good. For a post mortem, I would have wanted to create the topshell differently and offer more structure, but it doesn't matter, it turned out great in my eyes.
+### PCB holder and bottom shell
 
-**Follow the two text files.** If you ignore the settings or the post-processing steps the parts will probably fit poorly or look rough (or not work at all).
+Bottom shell has integrated ribs and pockets that hold PCB and stop wobble side to side. PCB holder is separate small clip on top of bottom shell that presses board down so it won't lift up and down. Test upside down, board should not move.
+
+### Plunger studs
+
+Plungers include little ~2mm blocks that clip onto underside of top shell into 2 holes under 2 large plungers. Those are what clicks onto mechanical switches for LMB/RMB. Shortest stud is RMB, longest is LMB. Push into slots clearly visible. May be deprecated later but currently are needed (will be merged into top shell later rather than clip-on).
+
+### How I modelled these
+
+I'm extremely happy with how these turned out. I practically mastered TinkerCAD just doing this project alone. I didn't use Blender or Fusion. I used specific shaped cutouts, the sketch tool to get exact profiles, and like 100ish hole objects layered on the baseplate to get curves and clearances right. It sounds messy but it works and final fit is tight.
+
+### Print info
+
+| Setting | Value |
+| --- | --- |
+| Material | PETG |
+| Layer | 0.25mm first 0.35mm |
+| Infill | 9% |
+| Support | Tree auto |
+| Brim | None |
+| Fuzzy | Off |
+
+Follow settings.txt and post-processing.txt, then docs/guides/assembly.md. Flash before closing top shell.
