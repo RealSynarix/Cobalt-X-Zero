@@ -20,40 +20,40 @@ export function checkDirty(schema, setDirty){
   }
 }
 
-export async function readAll(schema, setStep, log){
+export async function readAll(schema, setStep){
   baseline={}; current={}; dirty.clear();
   document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
   const ids=allFids(schema);
   for(const fid of ids){
     try{
-      const r=await sendWithRetry(CMD.READ,fid,new Uint8Array([]),log);
+      const r=await sendWithRetry(CMD.READ,fid,new Uint8Array([]));
       const val=payloadToVal(fid,r.payload);
       const el=fieldEl(fid);
       if(el) el.value=val;
       baseline[fid]=val;
-      log&&log(`Read FID${fid} OK = ${val}`);
+      console.log(`[Cobalt] Read FID${fid} OK = ${val}`);
       setStep&&setStep(`Reading ${fid} - ${schema[fid]?.label||''} = ${val}`);
-    }catch(e){log&&log(`Read FID${fid} FAIL ${e.message}`)}
+    }catch(e){console.log(`[Cobalt] Read FID${fid} FAIL ${e.message}`)}
     await new Promise(r=>setTimeout(r,35));
   }
   snapshotCurrent(schema);
 }
 
-export async function saveDirty(schema, validate, setDirtyFn, log, setStatus){
+export async function saveDirty(schema, validate, setDirtyFn, setStatus){
   snapshotCurrent(schema);
-  if(dirty.size===0){log&&log('Nothing changed'); return}
-  log&&log(`Saving ${dirty.size} changed: ${Array.from(dirty).join(',')}`);
+  if(dirty.size===0){console.log('[Cobalt] Nothing changed'); return}
+  console.log(`[Cobalt] Saving ${dirty.size} changed: ${Array.from(dirty).join(',')}`);
   for(const fid of Array.from(dirty)){
     const el=fieldEl(fid);
     const raw=el?.value??'';
     const v=validate(fid,raw,schema);
-    if(!v.ok){log&&log(`Validate FID${fid} FAIL ${v.err}`); setStatus&&setStatus(`FID${fid} invalid: ${v.err}`); continue;}
+    if(!v.ok){console.log(`[Cobalt] Validate FID${fid} FAIL ${v.err}`); setStatus&&setStatus(`FID${fid} invalid: ${v.err}`); continue;}
     try{
-      await sendWithRetry(CMD.WRITE,fid,v.data,log);
-      log&&log(`Saved FID${fid} OK`);
+      await sendWithRetry(CMD.WRITE,fid,v.data);
+      console.log(`[Cobalt] Saved FID${fid} OK`);
       baseline[fid]=current[fid];
       setDirtyFn(fid,false);
-    }catch(e){log&&log(`Save FID${fid} FAIL ${e.message}`)}
+    }catch(e){console.log(`[Cobalt] Save FID${fid} FAIL ${e.message}`)}
     await new Promise(r=>setTimeout(r,50));
   }
 }

@@ -4,7 +4,7 @@ export const CMD={READ:1,WRITE:2,RESET:4,PING:5};
 export const STATUS={OK:0,BUSY:3};
 export const RID=2;
 
-export async function sendWithRetry(cmd,fid,data,log,retries=3){
+export async function sendWithRetry(cmd,fid,data,retries=3){
   const dev=getDevice();
   if(!dev) throw Error('No device');
   for(let i=0;i<=retries;i++){
@@ -16,15 +16,15 @@ export async function sendWithRetry(cmd,fid,data,log,retries=3){
       const rr=dec(raw);
       if(rr.rawLen!==undefined && rr.rawLen<5) throw Error('short reply '+rr.rawLen);
       if(rr.status===3){
-        log&&log(`FID${fid} busy retry ${i+1}`);
+        console.log(`[Cobalt] FID${fid} busy retry ${i+1}`);
         await new Promise(r=>setTimeout(r,110));
         continue;
       }
       if(rr.status!==0) throw Error('dev status '+rr.status);
-      if(rr.cmd!==cmd||rr.fid!==fid) log&&log(`WARN cmd/fid mismatch got ${rr.cmd}/${rr.fid} exp ${cmd}/${fid}`);
+      if(rr.cmd!==cmd||rr.fid!==fid) console.log(`[Cobalt] WARN cmd/fid mismatch got ${rr.cmd}/${rr.fid} exp ${cmd}/${fid}`);
       return rr;
     }catch(e){
-      log&&log(`send ${cmd}/${fid} attempt ${i+1} FAIL ${e.message}`);
+      console.log(`[Cobalt] send ${cmd}/${fid} attempt ${i+1} FAIL ${e.message}`);
       if(i===retries) throw e;
       await new Promise(r=>setTimeout(r,160));
       try{const d=getDevice(); if(d&&!d.opened) await d.open()}catch{}

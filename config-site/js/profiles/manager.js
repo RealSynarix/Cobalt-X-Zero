@@ -1,10 +1,10 @@
 import {loadProfiles, saveProfiles} from './storage.js';
-import {$, $$} from '../utils/helpers.js';
+import {$ , $$} from '../utils/helpers.js';
 import {allFids} from '../config/fields.js';
 
 function isHW(p){return p.id==='hardware_default'||p.isHardwareDefault}
 
-export function ensureHardwareDefaultProfile(baseline, log, schema){
+export function ensureHardwareDefaultProfile(baseline, schema){
   const hwData={};
   for(const fid of allFids(schema)){
     if(baseline[fid]!==undefined) hwData[fid]=baseline[fid];
@@ -12,7 +12,7 @@ export function ensureHardwareDefaultProfile(baseline, log, schema){
   let profiles=loadProfiles();
   const hwProfile={
     id:'hardware_default',
-    name:'On-device',
+    name:'Hardware Default',
     color:'#666666',
     data:hwData,
     created:new Date().toISOString(),
@@ -22,7 +22,7 @@ export function ensureHardwareDefaultProfile(baseline, log, schema){
   if(idx>=0) profiles[idx]=hwProfile;
   else profiles.unshift(hwProfile);
   saveProfiles(profiles);
-  log&&log('Hardware snapshot saved');
+  console.log('[Cobalt] Hardware snapshot saved');
 }
 
 export function renderProfiles(onLoad, onStatus){
@@ -31,7 +31,7 @@ export function renderProfiles(onLoad, onStatus){
   if(!container) return;
   container.innerHTML='';
   if(list.length===0){
-    container.innerHTML='<p class="muted">No profiles yet. Connect to create on-device snapshot.</p>';
+    container.innerHTML='<p class="muted">No profiles yet. Connect to create Hardware Default.</p>';
     return;
   }
   list.forEach(p=>{
@@ -63,13 +63,13 @@ export function renderProfiles(onLoad, onStatus){
   });
 }
 
-export function createProfileFromCurrent(current, schema, validate, log, setStatus){
+export function createProfileFromCurrent(current, schema, validate, setStatus){
   const nameEl=$('#newProfileName');
   const colorEl=$('#newProfileColor');
   const name=nameEl?.value.trim();
   const color=colorEl?.value||'#0a5bd7';
   if(!name){setStatus&&setStatus('Profile name needed'); return false}
-  if(name==='Hardware Default'||name==='On-device'){setStatus&&setStatus('Name reserved'); return false}
+  if(name==='Hardware Default'){setStatus&&setStatus('Name reserved'); return false}
   const data={};
   for(const fid of Object.keys(schema).map(Number)){
     const raw=current[fid];
@@ -77,7 +77,7 @@ export function createProfileFromCurrent(current, schema, validate, log, setStat
     const sch=schema[fid];
     if(sch.readonly) continue;
     const v=validate(fid,raw,schema);
-    if(!v.ok){setStatus&&setStatus(`FID${fid} invalid: ${v.err}`); log&&log(`Profile save fail FID${fid} ${v.err}`); return false}
+    if(!v.ok){setStatus&&setStatus(`FID${fid} invalid: ${v.err}`); console.log(`[Cobalt] Profile save fail FID${fid} ${v.err}`); return false}
     data[fid]=raw;
   }
   const profiles=loadProfiles();
@@ -85,8 +85,7 @@ export function createProfileFromCurrent(current, schema, validate, log, setStat
   profiles.push({id,name,color,data,created:new Date().toISOString()});
   saveProfiles(profiles);
   if(nameEl) nameEl.value='';
-  renderProfiles();
-  log&&log(`Saved profile ${name}`);
+  console.log(`[Cobalt] Saved profile ${name}`);
   setStatus&&setStatus(`Saved ${name}`);
   return true;
 }

@@ -2,7 +2,7 @@ import {loadProfiles, saveProfiles} from './storage.js';
 import {renderProfiles} from './manager.js';
 import {$} from '../utils/helpers.js';
 
-export function initImportExport(log){
+export function initImportExport(){
   $('#exportProfiles')?.addEventListener('click',()=>{
     const data=JSON.stringify(loadProfiles(),null,2);
     const blob=new Blob([data],{type:'application/json'});
@@ -22,8 +22,8 @@ export function initImportExport(log){
       if(hw) filtered.unshift(hw);
       saveProfiles(filtered);
       renderProfiles();
-      log&&log('Imported '+arr.length+' profiles');
-    }catch(err){log&&log('Import fail '+err.message)}
+      console.log('[Cobalt] Imported '+arr.length+' profiles');
+    }catch(err){console.log('[Cobalt] Import fail '+err.message)}
     e.target.value='';
   });
 }

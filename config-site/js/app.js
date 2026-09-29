@@ -1,23 +1,31 @@
 import {SCHEMA} from './config/schema.js';
 import {validate} from './config/validation.js';
 import {setStatus} from './ui/status.js';
-import {log,initLog} from './ui/log.js';
 import {initTabs} from './ui/tabs.js';
 import {initResponsive} from './ui/responsive.js';
 import {setDirty,updateSaveBtn} from './ui/dirty-tracker.js';
 import {snapshotCurrent,checkDirty,current} from './hid/transport.js';
 import {initImportExport} from './profiles/import-export.js';
 import {renderProfiles,createProfileFromCurrent} from './profiles/manager.js';
-import {checkBrowser} from './utils/browser-check.js';
-import {handleMainConnect,handleDisconnect,doReadAll,doSave,handleReset,handlePing,openDemo} from './hid/actions.js';
+import {checkBrowser,initBrowserOverlay} from './utils/browser-check.js';
+import {handleMainConnect,handleDisconnect,doReadAll,doSave,handleReset,handlePing} from './hid/actions.js';
+import {initTooltips} from './ui/tooltip.js';
+import {initModals,openModal,closeModal} from './ui/modal.js';
 import {$ , $$} from './utils/helpers.js';
 
 export function initApp(){
-  initLog(); initTabs(); initResponsive();
-  initImportExport(log); checkBrowser(log);
-  bindFields(); renderProfiles(handleLoad,setStatus);
-  updateSaveBtn(); bindButtons();
-  log('Ready - connect to load config');
+  initBrowserOverlay();
+  initTabs();
+  initResponsive();
+  initImportExport();
+  initModals();
+  initTooltips(SCHEMA);
+  checkBrowser();
+  bindFields();
+  renderProfiles(handleLoad,setStatus);
+  updateSaveBtn();
+  bindButtons();
+  console.log('[Cobalt] Ready - connect to load config');
 }
 
 function bindFields(){
@@ -53,20 +61,23 @@ function handleLoad(prof){
   }
   snapshotCurrent(SCHEMA);
   checkDirty(SCHEMA,setDirty);
-  log(`Loaded ${prof.name}`);
+  console.log(`[Cobalt] Loaded ${prof.name}`);
   setStatus(`Loaded ${prof.name} - save to write to mouse`);
 }
 
 function bindButtons(){
   $('#mainConnectBtn')?.addEventListener('click',()=>handleMainConnect(handleLoad));
-  $('#openDemoBtn')?.addEventListener('click',()=>openDemo(handleLoad));
   $('#disconnectBtn')?.addEventListener('click',handleDisconnect);
   $('#readBtn')?.addEventListener('click',doReadAll);
   $('#saveBtn')?.addEventListener('click',doSave);
   $('#resetBtn')?.addEventListener('click',()=>handleReset(handleLoad));
   $('#pingBtn')?.addEventListener('click',handlePing);
+  $('#addProfileBtn')?.addEventListener('click',()=>openModal('profileModal'));
   $('#createProfileBtn')?.addEventListener('click',()=>{
-    createProfileFromCurrent(current,SCHEMA,validate,log,setStatus);
-    renderProfiles(handleLoad,setStatus);
+    const ok=createProfileFromCurrent(current,SCHEMA,validate,setStatus);
+    if(ok){
+      closeModal('profileModal');
+      renderProfiles(handleLoad,setStatus);
+    }
   });
 }

@@ -12,7 +12,8 @@
 <link rel="stylesheet" href="./css/components/profile.css"/>
 <link rel="stylesheet" href="./css/components/form.css"/>
 <link rel="stylesheet" href="./css/components/status.css"/>
-<link rel="stylesheet" href="./css/components/log.css"/>
+<link rel="stylesheet" href="./css/components/tooltip.css"/>
+<link rel="stylesheet" href="./css/components/modal.css"/>
 <link rel="stylesheet" href="./css/components/overlay.css"/>
 </head>
 <body>
@@ -20,7 +21,7 @@
   <div class="overlay-card">
     <h2>Browser not supported</h2>
     <p>Use Chrome or Edge on desktop with WebHID enabled.</p>
-    <p>WebHID is needed to talk to the mouse directly from the browser. No install, no bloat. Your browser does not expose <code>navigator.hid</code>.</p>
+    <p>This configurator talks directly to the mouse with <code>navigator.hid</code>. Firefox, Safari and iOS do not support it. Detection uses your userAgent, so if you spoof it, change it back to a Chrome or Edge userAgent.</p>
     <p>Your browser:</p>
     <div class="overlay-ua" id="overlayUa">unknown</div>
     <p style="margin-top:14px"><a href="https://developer.mozilla.org/en-US/docs/Web/API/HID" target="_blank" rel="noopener">MDN HID compatibility table</a></p>
@@ -33,7 +34,7 @@
 <div class="wrap">
   <div id="connectPage" class="card center connect-page">
     <h1 class="big-title">Cobalt-X Zero</h1>
-    <p class="muted" style="margin-top:8px">Open source, 3D printable, 50g balanced. STM32G431, PMW3360, 2 LEDs, silent clicks, ~2.5ms, 1kHz polling (8kHz internal + SOF sync). WebHID, no install.</p>
+    <p class="muted" style="margin-top:8px">Open source, 3D printable, 50g balanced mouse. STM32G431, PMW3360, silent clicks, ~2.5ms latency, 1kHz polling. Configure in browser, saved to flash.</p>
     <button id="mainConnectBtn" class="big-btn">Connect Cobalt-X Zero</button>
     <div id="loader" class="hidden">
       <div class="spinner"></div>
@@ -41,10 +42,6 @@
       <div id="stepText" class="faint">Initializing...</div>
     </div>
     <div id="connectError" class="error hidden"></div>
-    <div style="margin-top:16px" class="row" style="justify-content:center">
-      <button id="openDemoBtn" class="ghost">Open demo</button>
-    </div>
-    <p class="muted" style="margin-top:10px">Chrome or Edge desktop. Pairing is forgotten first so you always pick a fresh device.</p>
   </div>
 
   <div id="configPage" class="hidden">
@@ -52,7 +49,7 @@
       <div class="row" style="justify-content:space-between">
         <div>
           <h2 style="margin:0;font-size:18px;font-weight:800;letter-spacing:-.02em">Cobalt-X Zero</h2>
-          <span class="muted" id="deviceSub">Browser configurator</span>
+          <span class="muted" id="deviceSub">Browser configurator - values live on mouse</span>
         </div>
         <span class="pill" id="modePill">LIVE</span>
       </div>
@@ -77,24 +74,19 @@
       <button class="tab-btn" data-tab="pio">PIO</button>
     </div>
 
-    <!-- PROFILES TAB (also top) -->
     <div class="tab-panel active" id="tab-profiles">
       <div class="card">
         <div class="row" style="justify-content:space-between">
           <h3 style="margin:0">Profiles</h3>
           <div class="row">
+            <button id="addProfileBtn">Add new profile</button>
             <button id="exportProfiles" class="secondary">Export</button>
             <button id="importProfiles" class="secondary">Import</button>
             <input id="importFile" type="file" accept=".json" class="hidden"/>
           </div>
         </div>
-        <p class="muted" style="margin-top:8px">Stored in this browser. Load one, then save to write it to the mouse. On-device snapshot is auto-created on connect.</p>
+        <p class="muted" style="margin-top:8px">Hardware Default is a read-only snapshot taken on connect. Your custom profiles are stored in this browser. Load one then press Save changed to write it to the mouse.</p>
         <div id="profileList" style="margin-top:12px"></div>
-        <div class="grid" style="margin-top:16px">
-          <label>New profile name<input id="newProfileName" maxlength="24" placeholder="e.g. Competitive"/></label>
-          <label>Icon color<input id="newProfileColor" type="color" value="#0a5bd7"/></label>
-        </div>
-        <div class="row" style="margin-top:10px"><button id="createProfileBtn">Save current as profile</button></div>
       </div>
     </div>
 
@@ -104,8 +96,8 @@
         <div class="grid">
           <label>Device name<input id="f1" maxlength="31"/></label>
           <label>Manufacturer<input id="f2" maxlength="31"/></label>
-          <label>Serial<input id="f3" maxlength="15"/></label>
-          <label>Firmware<input id="f4" readonly/></label>
+          <label>Serial number<input id="f3" maxlength="15"/></label>
+          <label>Firmware version<input id="f4" readonly/></label>
         </div>
         <section>
           <h3>Modules</h3>
@@ -115,7 +107,7 @@
             <label>Scroll module<select id="f18"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
             <label>HyprX module<select id="f19"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
             <label>LEDs module<select id="f20"><option value="0">Disabled</option><option value="1">Enabled</option></select></label>
-            <label>SOF module<select id="f21"><option value="0">Disabled (free-run)</option><option value="1">Enabled (SOF throttled)</option></select></label>
+            <label>SOF sync module<select id="f21"><option value="0">Disabled (free-run)</option><option value="1">Enabled (SOF throttled)</option></select></label>
           </div>
         </section>
       </div>
@@ -126,12 +118,12 @@
         <h3>Sensor</h3>
         <div class="grid">
           <label>DPI <span>100 - 32000</span><input id="f32" type="number" min="100" max="32000"/></label>
-          <label>Poll rate<select id="f33"><option value="125">125 Hz</option><option value="250">250 Hz</option><option value="500">500 Hz</option><option value="1000">1000 Hz</option><option value="2000">2000 Hz</option><option value="4000">4000 Hz</option><option value="8000">8000 Hz</option></select></label>
+          <label>Polling rate<select id="f33"><option value="125">125 Hz</option><option value="250">250 Hz</option><option value="500">500 Hz</option><option value="1000">1000 Hz</option><option value="2000">2000 Hz</option><option value="4000">4000 Hz</option><option value="8000">8000 Hz</option></select></label>
           <label>Lift-off distance<select id="f34"><option value="1">1 mm</option><option value="2">2 mm</option><option value="3">3 mm</option></select></label>
-          <label>LOD squal <span>10 - 200</span><input id="f35" type="number" min="10" max="200"/></label>
-          <label>Angle snap<select id="f36"><option value="0">Off</option><option value="1">On</option></select></label>
-          <label>Snap strength <span>0 - 100</span><input id="f37" type="number" min="0" max="100"/></label>
-          <label>Surface<select id="f38"><option value="0">Default</option><option value="1">Cloth</option><option value="2">Hard</option><option value="3">Custom</option></select></label>
+          <label>Surface tuning SQUAL <span>10 - 200</span><input id="f35" type="number" min="10" max="200"/></label>
+          <label>Angle snapping<select id="f36"><option value="0">Off</option><option value="1">On</option></select></label>
+          <label>Angle snap strength <span>0 - 100</span><input id="f37" type="number" min="0" max="100"/></label>
+          <label>Surface preset<select id="f38"><option value="0">Default</option><option value="1">Cloth</option><option value="2">Hard</option><option value="3">Custom</option></select></label>
         </div>
       </div>
     </div>
@@ -140,11 +132,11 @@
       <div class="card">
         <h3>Buttons</h3>
         <div class="grid">
-          <label>Debounce PB3 LMB <span>0 - 20 ms</span><input id="f48" type="number" min="0" max="20"/></label>
-          <label>Debounce PB4 RMB <span>0 - 20 ms</span><input id="f49" type="number" min="0" max="20"/></label>
-          <label>Debounce PB5 MMB <span>0 - 20 ms</span><input id="f50" type="number" min="0" max="20"/></label>
-          <label>Debounce PB6 Side <span>0 - 20 ms</span><input id="f51" type="number" min="0" max="20"/></label>
-          <label>Debounce PB7 PIO <span>0 - 20 ms</span><input id="f52" type="number" min="0" max="20"/></label>
+          <label>Left click debounce <span>0 - 20 ms</span><input id="f48" type="number" min="0" max="20"/></label>
+          <label>Right click debounce <span>0 - 20 ms</span><input id="f49" type="number" min="0" max="20"/></label>
+          <label>Middle click debounce <span>0 - 20 ms</span><input id="f50" type="number" min="0" max="20"/></label>
+          <label>Side button debounce <span>0 - 20 ms</span><input id="f51" type="number" min="0" max="20"/></label>
+          <label>PIO button debounce <span>0 - 20 ms</span><input id="f52" type="number" min="0" max="20"/></label>
           <label>Click mode<select id="f53"><option value="0">Normal</option><option value="1">Rapid</option><option value="2">Custom</option></select></label>
         </div>
       </div>
@@ -152,11 +144,11 @@
 
     <div class="tab-panel" id="tab-scroll">
       <div class="card">
-        <h3>Scroll</h3>
+        <h3>Scroll wheel</h3>
         <div class="grid">
           <label>Wheel divisor <span>1 - 8</span><input id="f64" type="number" min="1" max="8"/></label>
-          <label>Wheel invert<select id="f65"><option value="0">Normal</option><option value="1">Inverted</option></select></label>
-          <label>Wheel smooth<select id="f66"><option value="0">No smoothing</option><option value="1">Smooth</option></select></label>
+          <label>Scroll direction<select id="f65"><option value="0">Normal</option><option value="1">Inverted</option></select></label>
+          <label>Scroll smoothing<select id="f66"><option value="0">No smoothing</option><option value="1">Smooth</option></select></label>
         </div>
       </div>
     </div>
@@ -172,7 +164,7 @@
             <div class="color-row"><div class="color-swatch" data-swatch-for="f97" style="background:#ff3333"></div><input id="f97" type="color" data-color="1"/></div>
           </label>
           <label>Brightness <span>0 - 255</span><input id="f98" type="number" min="0" max="255"/></label>
-          <label>Effect<select id="f99"><option value="0">Static</option><option value="1">Breathing</option><option value="2">Pulse</option><option value="3">Static alt</option><option value="4">Off</option></select></label>
+          <label>LED effect<select id="f99"><option value="0">Static</option><option value="1">Breathing</option><option value="2">Pulse</option><option value="3">Static alt</option><option value="4">Off</option></select></label>
           <label>Effect speed <span>0 - 255</span><input id="f100" type="number" min="0" max="255"/></label>
         </div>
       </div>
@@ -180,50 +172,50 @@
 
     <div class="tab-panel" id="tab-hyprx">
       <div class="card">
-        <h3>HyprX</h3>
-        <p class="muted" style="margin-bottom:12px">Scroll becomes clicks when macro is held. LED switches if enabled.</p>
+        <h3>HyprX - scroll to click</h3>
+        <p class="muted" style="margin-bottom:12px">When you hold the side macro, scroll turns into clicks. Good for rapid fire.</p>
         <div class="grid">
           <label>HyprX enable<select id="f80"><option value="0">Off</option><option value="1">On</option></select></label>
-          <label>Use macro colour<select id="f81"><option value="0">Use default</option><option value="1">Use macro when active</option></select></label>
-          <label>Target<select id="f82"><option value="0">Left (LMB)</option><option value="1">Right (RMB)</option></select></label>
-          <label>Steps to click <span>1 - 24</span><input id="f83" type="number" min="1" max="24"/></label>
+          <label>Use macro LED colour<select id="f81"><option value="0">Use default</option><option value="1">Use macro when active</option></select></label>
+          <label>Target button<select id="f82"><option value="0">Left (LMB)</option><option value="1">Right (RMB)</option></select></label>
+          <label>Steps to trigger click <span>1 - 24</span><input id="f83" type="number" min="1" max="24"/></label>
           <label>Divisor <span>1 - 4</span><input id="f84" type="number" min="1" max="4"/></label>
-          <label>Hold ms <span>0 - 500</span><input id="f85" type="number" min="0" max="500"/></label>
+          <label>Hold time <span>0 - 500 ms</span><input id="f85" type="number" min="0" max="500"/></label>
         </div>
       </div>
     </div>
 
     <div class="tab-panel" id="tab-pio">
       <div class="card">
-        <h3>PIO - Side button</h3>
-        <p class="muted" style="margin-bottom:12px">PB7 side button. Mode picks the action. Combo is up to 8 HID codes.</p>
+        <h3>PIO - side programmable button</h3>
+        <p class="muted" style="margin-bottom:12px">PB7 button. Pick what it does. Combo can be up to 8 HID codes.</p>
         <div class="grid">
-          <label>Mode<select id="f112"><option value="0">Type "Program Me!"</option><option value="1">Mouse button</option><option value="2">Keyboard key</option><option value="3">Key combo (8 max)</option><option value="4">Media</option></select></label>
+          <label>Side button action<select id="f112"><option value="0">Type "Program Me!"</option><option value="1">Mouse button</option><option value="2">Keyboard key</option><option value="3">Key combo (8 max)</option><option value="4">Media key</option></select></label>
           <label>AT legacy<select id="f113"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
           <label class="pb7-conditional" data-show-for="1">Mouse button<select id="f114"><option value="0">Left</option><option value="1">Right</option><option value="2">Middle</option><option value="3">Back</option><option value="4">Forward</option><option value="5">Btn5</option><option value="6">Btn6</option><option value="7">Btn7</option></select></label>
-          <label class="pb7-conditional" data-show-for="2">Key code <span>0 - 255</span><input id="f115" type="number" min="0" max="255" placeholder="e.g. 65 = A"/></label>
-          <label class="pb7-conditional" data-show-for="3">Combo <span>comma HID codes</span><input id="f116" placeholder="e.g. 224, 4 (Ctrl+A)"/></label>
-          <label class="pb7-conditional" data-show-for="4">Media code <span>0 - 12</span><input id="f117" type="number" min="0" max="12"/></label>
+          <label class="pb7-conditional" data-show-for="2">Keyboard key <span>0 - 255</span><input id="f115" type="number" min="0" max="255" placeholder="e.g. 65 = A"/></label>
+          <label class="pb7-conditional" data-show-for="3">Key combo <span>comma HID codes</span><input id="f116" placeholder="e.g. 224, 4 (Ctrl+A)"/></label>
+          <label class="pb7-conditional" data-show-for="4">Media key <span>0 - 12</span><input id="f117" type="number" min="0" max="12"/></label>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <div class="card" style="margin-top:16px">
-      <div class="log-wrap" id="logWrap">
-        <div class="log-head" id="logHead"><span>Debug log</span><div class="row"><button id="clearLog" class="secondary">Clear</button><button id="toggleLog" class="secondary">Hide</button></div></div>
-        <pre id="log"></pre>
-      </div>
+<!-- Profile create modal -->
+<div id="profileModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h3>Add new profile</h3>
+    <p class="muted">Saves current settings from all tabs into a new profile stored in this browser.</p>
+    <div class="grid" style="margin-top:12px">
+      <label>Profile name<input id="newProfileName" maxlength="24" placeholder="e.g. Competitive"/></label>
+      <label>Icon colour<input id="newProfileColor" type="color" value="#0a5bd7"/></label>
+    </div>
+    <div class="modal-actions">
+      <button class="secondary" data-close-modal="profileModal">Cancel</button>
+      <button id="createProfileBtn">Save profile</button>
     </div>
   </div>
-
-  <footer class="site-footer">
-    <div>Open source. 3D printable. WebHID, no extra software. 50g balanced, PMW3360, STM32G4.</div>
-    <div class="footer-links">
-      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
-      <a href="./">GitHub Pages</a>
-      <span>VID 1209 / PID C0BA / RID 2</span>
-    </div>
-  </footer>
 </div>
 
 <script type="module" src="./js/main.js"></script>
