@@ -1,7 +1,14 @@
-Material           – PETG
-Layer Height       – 0.25 mm
-First Layer Height – 0.35 mm
-Infill Density     – 9 %
-Support            – Tree (auto)
-Brim               – None
-Fuzzy Skin         – Off
+Material           - PETG
+Layer Height       - 0.25 mm
+First Layer Height - 0.35 mm
+Infill Density     - 9 %
+Support            - Tree (auto)
+Brim               - None
+Fuzzy Skin         - Off
+Wall Count         - 3
+Top Layers         - 4
+Bottom Layers      - 4
+Print Speed        - 45 mm/s outer, 60 mm/s inner
+Nozzle Temp        - 235C
+Bed Temp           - 75C
+Retraction         - 4.5mm at 40mm/s

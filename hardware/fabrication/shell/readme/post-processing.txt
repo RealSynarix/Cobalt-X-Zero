@@ -1,22 +1,31 @@
-Tools you’ll need:
-- Pliers (to remove supports and pluck off imperfections)
-- File / sandpaper (for aesthetics and mechanical fit)
+Tools:
+- Pliers for supports
+- File / sandpaper 180 and 320 grit
+- Tweezers
 
-General steps for every part:
-- Pluck off any stringing
-- Check for faults
-- Lightly sand flat areas (stay away from small features)
-- Remove all support material
+General:
+- Remove stringing
+- Check faults
+- Lightly sand flat mating surfaces, avoid small features
+- Remove support nubs
 
-Bottom Shell:
-- If needed, sand the inside of the lens socket so the lens part drops in cleanly
+Bottom Plate:
+- Has ribs/pockets to stop wobble. Sand lens socket so lens drops clean.
+- Clear screw holes with 2mm drill by hand if needed.
 
 PCB-Holder:
-- If needed, sand edges of pushdown clip heavily until fit (must not be loose)
+- Small clip on top of bottom shell near MCU, holds board down so it won't lift.
+- Sand edges until it clips firmly, not loosely.
 
 Scroll Wheel:
-- Sand the rough edge that appears after printing (sand it hard)
-- Sand the little button pad that presses the MMB
+- Sand rough edge from seam hard, and small pad that presses middle switch.
 
 Side Buttons:
-- Sand the front faces (the parts your thumb actually touches)
+- Sand front faces where thumb touches, sand inner rails if sticky.
+
+Top Shell and Plunger Studs:
+- Studs are ~2mm blocks clipped onto underside of top shell into 2 holes under large plungers. These click onto LMB/RMB switches. Shortest RMB longest LMB.
+- Ensure studs fully seated, plungers move freely.
+
+Final:
+- Assemble without feet first, test clicks and scroll, then add feet. Flash binary from firmware/build/ before closing top shell. Test at https://realsynarix.github.io/Cobalt-X-Zero/.
