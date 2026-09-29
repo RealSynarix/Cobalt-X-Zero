@@ -39,9 +39,8 @@ export function renderProfiles(onLoad, onStatus){
     const div=document.createElement('div');
     div.className='profile'+(hw?' hardware':'');
     const letter=(p.name||'?')[0].toUpperCase();
-    const hwProfile=list.find(x=>isHW(x));
-    const count=hw ? 0 : Object.keys(p.data||{}).filter(fid=>!hwProfile || String(p.data[fid])!==String(hwProfile.data[fid])).length;
-    const badge = hw ? '<span class="badge hw">Snapshot</span>' : `<span class="badge">${count} changed</span>`;
+    const count=Object.keys(p.data||{}).length;
+    const badge = hw ? '<span class="badge hw">Snapshot</span>' : `<span class="badge">${count} fields</span>`;
     const actions = hw ? '' : `<div class="profile-actions"><button data-act="load" data-id="${p.id}">Load</button><button data-act="delete" data-id="${p.id}" class="secondary">Delete</button></div>`;
     div.innerHTML=`<div class="icon" style="background:${p.color||'#333'}">${letter}</div><div class="profile-info"><div class="profile-name">${p.name} ${badge}</div><div class="profile-meta">${new Date(p.created).toLocaleString()}</div></div>${actions}`;
     container.appendChild(div);
@@ -83,8 +82,7 @@ export function createProfileFromCurrent(current, schema, validate, setStatus){
   }
   const profiles=loadProfiles();
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const source=document.getElementById('pioCode')?.value||'';
-   profiles.push({id,name,color,data,source,created:new Date().toISOString()});
+  profiles.push({id,name,color,data,created:new Date().toISOString()});
   saveProfiles(profiles);
   if(nameEl) nameEl.value='';
   console.log(`[Cobalt] Saved profile ${name}`);

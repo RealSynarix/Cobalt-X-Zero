@@ -24,7 +24,7 @@ export function payloadToVal(fid,payload){
     if(payload.length>=3) return rgb2hex(payload[0],payload[1],payload[2]);
     return '#000000';
   }
-  if([22,32,33,39,85,86,101].includes(fid)){
+  if([32,33,85].includes(fid)){
     if(payload.length>=2) return (payload[0]|(payload[1]<<8)).toString();
     return payload[0]?.toString()||'0';
   }
@@ -33,7 +33,6 @@ export function payloadToVal(fid,payload){
     if(payload.length===0) return '';
     return Array.from(payload).join(',');
   }
-  if(fid>=119&&fid<=126) return Array.from(payload).map(x=>x.toString(16).padStart(2,'0')).join('');
   if(payload.length>=1) return payload[0].toString();
   return '';
 }

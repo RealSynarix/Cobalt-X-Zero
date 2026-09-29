@@ -12,8 +12,6 @@ void hid_send(uint8_t buttons,int8_t wheel,int16_t dx,int16_t dy);
 void hid_type_program_me(void);
 uint8_t hid_slot(void);
 void hid_service(void);
-void hid_pio_trigger(uint8_t event);
-uint32_t hid_last_activity_ms(void);
 #ifdef __cplusplus
 }
 #endif

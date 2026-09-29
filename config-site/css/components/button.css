@@ -16,4 +16,4 @@ button.ghost:hover{border-color:#333;color:#ddd}
 }
 .big-btn:hover{transform:translateY(-1px);box-shadow:0 12px 32px rgba(255,255,255,.18)}
 @media(max-width:400px){.big-btn{min-width:100%;width:100%}}
-#saveBtn.has-dirty{background:#2e5bff;color:#fff;border-color:#2e5bff}
+#saveBtn.has-dirty{background:#0a5bd7;color:#fff;border-color:#0a5bd7}

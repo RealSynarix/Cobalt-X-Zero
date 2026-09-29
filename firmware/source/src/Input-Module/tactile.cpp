@@ -1,9 +1,7 @@
 #include "tactile.h"
 #include "../HyprX-Module/engine.h"
 #include "../Config-Module/config.h"
-#include "../USB-Module/hid.h"
 #include <stm32g4xx.h>
-#include <math.h>
 #define BASE_LOCK 34000u
 #define FRAME_DIV 32
 #define QSIZE 32
@@ -14,13 +12,10 @@ static volatile uint8_t qh=0,qt=0,qc=0;
 static volatile uint8_t g_buttons=0;
 static uint8_t phys_state=0;
 static uint32_t last_cyc[5]={0,0,0,0,0};
-static uint32_t hold_until[4]={0,0,0,0};
 static int32_t wheel_acc=0;
 static uint32_t last_enc=0;
-static uint32_t last_wheel_cyc=0;
-static int8_t last_wheel_dir=0;
-static uint8_t wheel_reverse_count=0;
 static uint8_t frame=0;
+static volatile uint8_t macro_q=0;
 static inline void qpush(uint8_t b,int8_t w,uint8_t m){
 uint32_t p=__get_PRIMASK();__disable_irq();
 if(qc<QSIZE){q[qh].b=b;q[qh].w=w;q[qh].m=m;qh=(qh+1)&QMASK;qc++;}
@@ -35,7 +30,6 @@ case 2:ms=g_cfg.db_pb5;break;
 case 3:ms=g_cfg.db_pb6;break;
 default:ms=g_cfg.db_pb7;
 }
-ms=(ms*(uint32_t)g_cfg.debounce_scale)/100u;
 ms*=SystemCoreClock/1000u;
 switch(g_cfg.click_mode){
 case 1:return ms*2u;
@@ -82,14 +76,13 @@ GPIOB->PUPDR=(GPIOB->PUPDR&~((0x3u<<6)|(0x3u<<8)|(0x3u<<10)|(0x3u<<12)|(0x3u<<14
 GPIOB->IDR;
 last_enc=(GPIOB->IDR>>8)&3u;
 phys_state=read_pins();
-g_buttons=0;memset(hold_until,0,sizeof(hold_until));
+g_buttons=0;
 qh=qt=qc=0;
 }
 void tactile_tick(void){
 frame++;
 uint8_t now=read_pins();
 uint32_t cyc=DWT->CYCCNT;
-uint32_t hold_cycles=(uint32_t)g_cfg.button_hold*(SystemCoreClock/1000u);
 for(uint8_t i=0;i<5;i++){
 uint8_t mask=1u<<i;
 uint8_t cur=now&mask;
@@ -100,60 +93,30 @@ phys_state=(phys_state&~mask)|cur;
 last_cyc[i]=cyc;
 if(cur){
 if(i<4)g_buttons|=mask;
-else hid_pio_trigger(cur?1:2);
+else macro_q=1;
 }else{
-if(i<4){
-if(g_cfg.button_hold)hold_until[i]=cyc+hold_cycles;
-else g_buttons&=(uint8_t)~mask;
+if(i<4)g_buttons&=~mask;
 }
 }
 }
-}
-}
-for(uint8_t i=0;i<4;i++){
-uint8_t mask=1u<<i;
-if(!(now&mask)&&hold_cycles&&hold_until[i]&&cyc>=hold_until[i]){g_buttons&=(uint8_t)~mask;hold_until[i]=0;}
 }
 int8_t wd=read_wheel();
 if(wd){
-uint32_t noww=DWT->CYCCNT;
-uint32_t gap=last_wheel_cyc?noww-last_wheel_cyc:0xFFFFFFFFu;
-uint32_t noise_window=(uint32_t)g_cfg.wheel_noise*(SystemCoreClock/2000u);
-if(g_cfg.wheel_noise&&last_wheel_dir&&wd!=last_wheel_dir&&gap<noise_window){
-wheel_reverse_count++;
-if(wheel_reverse_count<g_cfg.wheel_noise+1)wd=0;
-}else wheel_reverse_count=0;
-if(wd){
-last_wheel_dir=wd;last_wheel_cyc=noww;
-int32_t div=g_cfg.wheel_div?g_cfg.wheel_div:3;
 wheel_acc+=wd;
+int32_t div=g_cfg.wheel_div?g_cfg.wheel_div:3;
 if(wheel_acc>=div||wheel_acc<=-div){
 int8_t w=wheel_acc>0?1:-1;
-wheel_acc=0;
-if(g_cfg.wheel_accel&&gap<(SystemCoreClock/80u)){
-uint8_t boost=(uint8_t)(1u+g_cfg.wheel_accel/25u);
-if(boost>4)boost=4;
-w=(int8_t)(w*boost);
-}
-static float smooth_acc=0.0f;
-if(g_cfg.wheel_smooth){
-float keep=1.0f-0.005f*(float)(g_cfg.wheel_smooth_strength>100?100:g_cfg.wheel_smooth_strength);
-smooth_acc+=(float)w*keep;
-if(fabsf(smooth_acc)<1.0f)w=0;
-else{w=smooth_acc>0?1:-1;smooth_acc-=w;}
-}else smooth_acc=0.0f;
-if(w){
 if(g_cfg.wheel_inv)w=-w;
 qpush(g_buttons,w,0);
-}
-}
+wheel_acc=0;
 }
 }
 if((frame%FRAME_DIV)==0){
 uint8_t b=g_buttons;
 int32_t d=0;
 b=hyprx_update(b,&d);
-qpush(b,0,0);
+qpush(b,0,macro_q);
+macro_q=0;
 }
 }
 uint8_t tactile_pop(tactile_report_t *out){

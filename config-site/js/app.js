@@ -12,7 +12,6 @@ import {handleMainConnect,handleDisconnect,doReadAll,doSave,handleReset,handlePi
 import {initTooltips} from './ui/tooltip.js';
 import {initModals,openModal,closeModal} from './ui/modal.js';
 import {$ , $$} from './utils/helpers.js';
-import {compilePIO,exampleSource,hexChunks} from './config/pio-compiler.js';
 
 export function initApp(){
   initBrowserOverlay();
@@ -38,7 +37,10 @@ function bindFields(){
       checkDirty(SCHEMA,setDirty);
       if(fid===112){
         const mode=Number(el.value);
-        $('#pioCodePane')?.classList.toggle('hidden',mode!==5);
+        $$('.pb7-conditional').forEach(c=>{
+          const sf=c.dataset.showFor;
+          if(sf!==undefined) c.classList.toggle('show', Number(sf)===mode);
+        });
       }
       const sw=document.querySelector(`[data-swatch-for='f${fid}']`);
       if(sw) sw.style.background=el.value;
@@ -46,8 +48,6 @@ function bindFields(){
     el.addEventListener('input',onChange);
     el.addEventListener('change',onChange);
   }
-  const pioMode=$('#f112');
-  if(pioMode) $('#pioCodePane')?.classList.toggle('hidden',Number(pioMode.value)!==5);
 }
 
 function handleLoad(prof){
@@ -59,8 +59,6 @@ function handleLoad(prof){
     const sw=document.querySelector(`[data-swatch-for='f${fid}']`);
     if(sw) sw.style.background=val;
   }
-  const code=document.getElementById('pioCode');
-  if(code&&prof.source) code.value=prof.source;
   snapshotCurrent(SCHEMA);
   checkDirty(SCHEMA,setDirty);
   console.log(`[Cobalt] Loaded ${prof.name}`);
@@ -80,35 +78,6 @@ function bindButtons(){
     if(ok){
       closeModal('profileModal');
       renderProfiles(handleLoad,setStatus);
-    }
-  });
-  $('#loadPioExample')?.addEventListener('click',()=>{
-    const n=$('#pioExample')?.value||'custom';
-    const mode=$('#f112');
-    if(mode){mode.value='5';mode.dispatchEvent(new Event('change'));}
-    const code=$('#pioCode');
-    if(code) code.value=exampleSource(n);
-    setStatus(`Loaded PIO example: ${n}`);
-  });
-  $('#compilePio')?.addEventListener('click',()=>{
-    try{
-      const mode=$('#f112');
-      if(mode){mode.value='5';mode.dispatchEvent(new Event('change'));}
-      const bytes=compilePIO($('#pioCode')?.value||'');
-      const chunks=hexChunks(bytes);
-      chunks.forEach((hex,i)=>{
-        const el=$('#f'+(119+i));
-        if(el) el.value=hex;
-      });
-      snapshotCurrent(SCHEMA);
-      for(let i=0;i<8;i++) setDirty(119+i,true);
-      const st=$('#pioCompileStatus');
-      if(st) st.textContent=`Compiled ${bytes[2]|(bytes[3]<<8)} bytes of PIO bytecode. Stage is ready; press Save changed to write it to the mouse.`;
-      setStatus('PIO program compiled and staged');
-    }catch(e){
-      const st=$('#pioCompileStatus');
-      if(st) st.textContent=`Compile error: ${e.message}`;
-      setStatus(`PIO compile failed: ${e.message}`);
     }
   });
 }
