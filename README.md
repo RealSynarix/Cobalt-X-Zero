@@ -1,39 +1,36 @@
 # Cobalt-X Zero
 
-Open source, 3D-printable, 50g balanced mouse. Built around STM32G431 and PMW3360. No driver bloat, config lives in the browser via WebHID.
+An open source, 3D-printable, 50g balanced custom gaming mouse. Built around STM32G431 and PMW3360. The mouse uses WebHID rather than traditional software for configuration, and has a vast array of configs to modify.
 
 **Config site:** https://realsynarix.github.io/Cobalt-X-Zero/ - works in Chrome / Edge desktop. Plug in, hit Connect, edit, save.
 
 ### Why this exists
 
-Most mice ship with heavy software. This one doesn't. Everything is open. PCB, shell, firmware, configurator. You can build it, change it, and it stays light on the host.
+Most mice require closed software that uses host resources. This one doesn't. Additionally, Everything is open. PCB, shell, firmware, configurator. You can build it, change it, and its ideal for people who hate proprietary peripherals.
 
-Weight is exactly 50g without cable. Balance is centered so it doesn't pull to one side.
+### Mouse Specs
 
-### Quick specs
-
-| Part | Detail |
-| --- | --- |
-| MCU | STM32G431KBT6, 170MHz, LQFP-32 |
-| Sensor | PixArt PMW3360, SPI, SROM 0x04 |
-| Polling | 1000Hz USB, 8000Hz internal loop + SOF sync |
-| Click latency | ~2.5ms measured from switch to USB report |
-| Weight | 50g without cable |
-| Switches | Kailh GM 8.0 for LMB/RMB/MMB, silent tactile for side + wheel |
-| Wheel | EC10 encoder + custom printed wheel |
-| LEDs | 2x RGB, TIM1 PWM on PA8/9/10 |
-| Config | WebHID, VID 0x1209 PID 0xC0BA, Report ID 2, 64 bytes |
-| Shell | 6 parts, PETG, tree support, 0.25mm layer |
+| Part          | Detail                                      |
+|---------------|---------------------------------------------|
+| MCU           | STM32G431KBT6 (170 MHz, LQFP-32)            |
+| Sensor        | PixArt PMW3360                              |
+| Polling       | 1000 Hz USB (8 kHz internal + SOF sync)     |
+| Click latency | ~2.5 ms (switch → USB report)               |
+| Weight        | 50 g (without cable)                        |
+| Switches      | Kailh Mute push buttons                     |
+| Wheel         | EC10 encoder + custom printed wheel         |
+| LEDs          | 2× RGB (TIM1 PWM on PA8/9/10)               |
+| Config        | WebHID Website hosted on github pages       |
+| Shell         | 6-part PETG (0.25 mm layer, tree supports)  |
 
 ### Repo layout
 
 | Folder | What is inside |
 | --- | --- |
-| `firmware/source` | C++ source firmware for devs |
-| `firmware/build/` | Built binaries, flash these for consumer use |
-| `hardware/fabrication/pcb/` | KiCad PCB, Gerber zip, BOM, positions, netlist |
-| `hardware/fabrication/shell/` | STLs for bottom, top, wheel, side buttons, plungers, holder |
-| `docs/guides/` | Assembly, firmware flashing, configuration, main index |
+| `/firmware` | C++ firmware for flashing (includes both source and compiled binaries) |
+| `hardware/fabrication/pcb/` | Files for KiCAD + Gerbers and other fab files |
+| `hardware/fabrication/shell/` | 3D models to print + info|
+| `docs/guides/` | Assembly, firmware flashing, configuration, general info |
 
 ### Getting started
 
